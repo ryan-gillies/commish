@@ -1,0 +1,69 @@
+
+
+============================== 16:01:40.940087 | 5f1ca553-a559-43fd-b4cd-c6c8cb2080dd ==============================
+[0m16:01:40.940087 [info ] [MainThread]: Running with dbt=1.7.4
+[0m16:01:40.943673 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'log_cache_events': 'False', 'write_json': 'True', 'partial_parse': 'True', 'cache_selected_only': 'False', 'profiles_dir': '/Users/ryan.gillies/.dbt', 'fail_fast': 'False', 'warn_error': 'None', 'log_path': 'logs', 'version_check': 'True', 'debug': 'False', 'use_colors': 'True', 'use_experimental_parser': 'False', 'no_print': 'None', 'quiet': 'False', 'warn_error_options': 'WarnErrorOptions(include=[], exclude=[])', 'introspect': 'True', 'invocation_command': 'dbt init', 'static_parser': 'True', 'target_path': 'None', 'log_format': 'default', 'send_anonymous_usage_stats': 'False'}
+[0m16:01:49.405133 [debug] [MainThread]: Starter project path: /Users/ryan.gillies/Documents/FantasyFootball/.venv/lib/python3.11/site-packages/dbt/include/starter_project
+[0m16:01:49.416699 [info ] [MainThread]: 
+Your new dbt project "record_book" was created!
+
+For more information on how to configure the profiles.yml file,
+please consult the dbt documentation here:
+
+  https://docs.getdbt.com/docs/configure-your-profile
+
+One more thing:
+
+Need help? Don't hesitate to reach out to us via GitHub issues or on Slack:
+
+  https://community.getdbt.com/
+
+Happy modeling!
+
+[0m16:01:49.417109 [info ] [MainThread]: Setting up your profile.
+[0m16:04:03.648820 [info ] [MainThread]: Profile record_book written to /Users/ryan.gillies/.dbt/profiles.yml using target's profile_template.yml and your supplied values. Run 'dbt debug' to validate the connection.
+[0m16:04:03.664965 [debug] [MainThread]: Resource report: {"command_name": "init", "command_success": true, "command_wall_clock_time": 142.77727, "process_user_time": 1.197384, "process_kernel_time": 0.237345, "process_mem_max_rss": "125681664", "process_in_blocks": "0", "process_out_blocks": "0"}
+[0m16:04:03.665650 [debug] [MainThread]: Command `dbt init` succeeded at 16:04:03.665514 after 142.78 seconds
+[0m16:04:03.665994 [debug] [MainThread]: Flushing usage events
+
+
+============================== 16:04:10.452795 | eea46d1a-5376-4650-9099-64233ac37d52 ==============================
+[0m16:04:10.452795 [info ] [MainThread]: Running with dbt=1.7.4
+[0m16:04:10.456361 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'log_cache_events': 'False', 'write_json': 'True', 'partial_parse': 'True', 'cache_selected_only': 'False', 'warn_error': 'None', 'fail_fast': 'False', 'profiles_dir': '/Users/ryan.gillies/.dbt', 'log_path': 'logs', 'version_check': 'True', 'debug': 'False', 'use_colors': 'True', 'use_experimental_parser': 'False', 'no_print': 'None', 'quiet': 'False', 'warn_error_options': 'WarnErrorOptions(include=[], exclude=[])', 'introspect': 'True', 'invocation_command': 'dbt debug', 'log_format': 'default', 'target_path': 'None', 'static_parser': 'True', 'send_anonymous_usage_stats': 'False'}
+[0m16:04:10.456848 [info ] [MainThread]: dbt version: 1.7.4
+[0m16:04:10.457137 [info ] [MainThread]: python version: 3.11.5
+[0m16:04:10.457400 [info ] [MainThread]: python path: /Users/ryan.gillies/Documents/FantasyFootball/.venv/bin/python3.11
+[0m16:04:10.457610 [info ] [MainThread]: os info: macOS-14.1-arm64-arm-64bit
+[0m16:04:10.461284 [info ] [MainThread]: Error importing adapter: No module named 'dbt.adapters.snowflake'
+[0m16:04:10.462607 [info ] [MainThread]: Error importing adapter: No module named 'dbt.adapters.snowflake'
+[0m16:04:10.529734 [info ] [MainThread]: Using profiles dir at /Users/ryan.gillies/.dbt
+[0m16:04:10.530096 [info ] [MainThread]: Using profiles.yml file at /Users/ryan.gillies/.dbt/profiles.yml
+[0m16:04:10.530299 [info ] [MainThread]: Using dbt_project.yml file at /Users/ryan.gillies/Documents/FantasyFootball/record_book/dbt_project.yml
+[0m16:04:10.530488 [info ] [MainThread]: Configuration:
+[0m16:04:10.530656 [info ] [MainThread]:   profiles.yml file [[31mERROR invalid[0m]
+[0m16:04:10.530878 [info ] [MainThread]:   dbt_project.yml file [[31mERROR not found[0m]
+[0m16:04:10.531106 [info ] [MainThread]: Required dependencies:
+[0m16:04:10.531389 [debug] [MainThread]: Executing "git --help"
+[0m16:04:10.549653 [debug] [MainThread]: STDOUT: "b"usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]\n           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]\n           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]\n           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]\n           [--config-env=<name>=<envvar>] <command> [<args>]\n\nThese are common Git commands used in various situations:\n\nstart a working area (see also: git help tutorial)\n   clone     Clone a repository into a new directory\n   init      Create an empty Git repository or reinitialize an existing one\n\nwork on the current change (see also: git help everyday)\n   add       Add file contents to the index\n   mv        Move or rename a file, a directory, or a symlink\n   restore   Restore working tree files\n   rm        Remove files from the working tree and from the index\n\nexamine the history and state (see also: git help revisions)\n   bisect    Use binary search to find the commit that introduced a bug\n   diff      Show changes between commits, commit and working tree, etc\n   grep      Print lines matching a pattern\n   log       Show commit logs\n   show      Show various types of objects\n   status    Show the working tree status\n\ngrow, mark and tweak your common history\n   branch    List, create, or delete branches\n   commit    Record changes to the repository\n   merge     Join two or more development histories together\n   rebase    Reapply commits on top of another base tip\n   reset     Reset current HEAD to the specified state\n   switch    Switch branches\n   tag       Create, list, delete or verify a tag object signed with GPG\n\ncollaborate (see also: git help workflows)\n   fetch     Download objects and refs from another repository\n   pull      Fetch from and integrate with another repository or a local branch\n   push      Update remote refs along with associated objects\n\n'git help -a' and 'git help -g' list available subcommands and some\nconcept guides. See 'git help <command>' or 'git help <concept>'\nto read about a specific subcommand or concept.\nSee 'git help git' for an overview of the system.\n""
+[0m16:04:10.550393 [debug] [MainThread]: STDERR: "b''"
+[0m16:04:10.550729 [info ] [MainThread]:  - git [[32mOK found[0m]
+
+[0m16:04:10.551036 [info ] [MainThread]: Connection test skipped since no profile was found
+[0m16:04:10.551505 [info ] [MainThread]: [31m2 checks failed:[0m
+[0m16:04:10.551905 [info ] [MainThread]: Could not load dbt_project.yml
+Profile loading failed for the following reason:
+Runtime Error
+  Credentials in profile "analytics", target "dev" invalid: Runtime Error
+    Could not find adapter type snowflake!
+
+Runtime Error
+  Credentials in profile "ledger", target "dev" invalid: Runtime Error
+    Could not find adapter type snowflake!
+
+
+[0m16:04:10.552160 [info ] [MainThread]: Project loading failed for the following reason:
+ project path </Users/ryan.gillies/Documents/FantasyFootball/record_book/dbt_project.yml> not found
+
+[0m16:04:10.553522 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_wall_clock_time": 0.15243413, "process_user_time": 1.224844, "process_kernel_time": 0.194824, "process_mem_max_rss": "126058496", "command_success": false, "process_in_blocks": "0", "process_out_blocks": "0"}
+[0m16:04:10.553979 [debug] [MainThread]: Command `dbt debug` failed at 16:04:10.553894 after 0.15 seconds
+[0m16:04:10.554323 [debug] [MainThread]: Flushing usage events

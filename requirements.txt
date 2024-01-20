@@ -1,0 +1,11 @@
+sleeper-api-wrapper
+leeger
+sleeper-py
+pyyaml
+onepassword
+venmo-api
+pandas
+sqlalchemy
+boto3
+psycopg2-binary
+flask

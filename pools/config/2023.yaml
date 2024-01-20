@@ -1,0 +1,81 @@
+buy_ins:
+  main_buy_in: 100
+  side_buy_in: 100
+
+optouts: ['584635491790393344']
+
+credentials:
+  venmo_uuid: fem2trbtqnwjpyn2cmqqhl5gju
+  sleeper_user_id: '457014438138998784'
+  aws_uuid: 4f74ky5bljkgbejidxcjxwdlpi
+
+main_pools:
+  - pool: LeagueWinner
+    payout: 0.6666666667
+
+  - pool: LeagueRunnerUp
+    payout: 0.25
+  
+  - pool: LeagueThirdPlace
+    payout: 0.0833333333
+
+side_pools:
+  # Weekly
+  # 42%
+  - pool: HighestScoreOfWeekPool
+    payout: 0.01
+
+  - pool: HighestScoringMarginOfWeekPool
+    payout: 0.01
+  
+  - pool: HighestScoringPlayerOfWeekPool
+    payout: 0.01
+
+  # Season Cumulatives
+  # 20%
+  - pool: RegularSeasonFirstPlacePool
+    payout: .05
+  
+  - pool: RegularSeasonMostPointsPool
+    payout: .05
+
+  - pool: RegularSeasonMostPointsAgainstPool
+    payout: .05
+
+  - pool: RegularSeasonHighestScoringPlayerPool
+    payout: .05
+
+  # Season Highs
+  # 16% 
+  - pool: OneWeekHighestScorePool
+    payout: .04
+
+  - pool: OneWeekHighestScoreAgainstPool
+    payout: .04
+
+  - pool: OneWeekHighestScoringPlayerPool
+    payout: .04
+
+  - pool: OneWeekSmallestMarginPool
+    payout: .04
+  
+# Special Weeks
+# 18%
+  - pool: OpeningWeekWinnersPool
+    payout: .06
+
+  - pool: RivalryWeekWinnersPool
+    payout: .06
+  
+  - pool: LastWeekWinnersPool
+    payout: .06
+
+# Props
+# 4%
+  - pool: PropPool
+    pool_id: best_messageboard_interaction
+    payout: .02
+  
+  - pool: PropPool
+    pool_id: best_team_name
+    payout: .02

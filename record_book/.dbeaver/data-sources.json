@@ -1,0 +1,35 @@
+{
+	"folders": {},
+	"connections": {
+		"postgres-jdbc-18d1857e573-62ce64f8c20b66d0": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "retool",
+			"save-password": true,
+			"configuration": {
+				"host": "ep-icy-salad-54868721.us-west-2.retooldb.com",
+				"port": "5432",
+				"database": "retool",
+				"url": "jdbc:postgresql://ep-icy-salad-54868721.us-west-2.retooldb.com:5432/retool",
+				"configurationType": "MANUAL",
+				"type": "dev",
+				"provider-properties": {},
+				"auth-model": "native"
+			}
+		}
+	},
+	"connection-types": {
+		"dev": {
+			"name": "Development",
+			"color": "255,255,255",
+			"description": "Regular development database",
+			"auto-commit": true,
+			"confirm-execute": false,
+			"confirm-data-change": false,
+			"smart-commit": false,
+			"smart-commit-recover": false,
+			"auto-close-transactions": true,
+			"close-transactions-period": 1800
+		}
+	}
+}
