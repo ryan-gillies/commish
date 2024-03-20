@@ -19,6 +19,8 @@ class Pool(ABC):
     Abstract base class representing a generic pool.
     """
 
+    DB_TABLE = "pools"
+
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
         Initialize a Pool object.
@@ -37,7 +39,7 @@ class Pool(ABC):
         self.week = week
         self.paid = False
         self.label = pool_id.replace("_", " ").title()
-        # self.save_to_dynamodb()
+        DynamoDBUtils.store_to_dynamodb(self.__dict__, Pool.DB_TABLE, self.pool_id, self.league.league_id, excluded_keys=['league'])
 
     def __str__(self):
         """
