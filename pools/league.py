@@ -70,8 +70,7 @@ class League:
             self._load_from_dynamodb(league_data)
         else:
             self.create_new_league()
-            db_table = DynamoDBUtils.get_table(League.DB_TABLE)
-            DynamoDBUtils.put_item(db_table,  self.league_id, self.__dict__)
+            DynamoDBUtils.store_to_dynamodb(self.__dict__, League.DB_TABLE, self.league_id )
             self.matchups = self.fetch_matchups()
             self.head_to_head = self.get_head_to_head()
             self.player_stats = self.fetch_player_stats()

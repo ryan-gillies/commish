@@ -49,7 +49,7 @@ class DynamoDBUtils:
         db_table = dynamodb.Table(table_name)
         return db_table
 
-    def put_item(db_table, partition_key_value, item_data, excluded_keys=None):
+    def put_item(db_table, partition_key_value, item_data, sort_key_value = None, excluded_keys = None):
         """
         Put an item into DynamoDB table.
 
@@ -65,12 +65,20 @@ class DynamoDBUtils:
         if excluded_keys is None:
             excluded_keys = []
         
-        converted_item_data = DynamoDBUtils.convert_floats_to_decimal(item_data)
         key_schema = db_table.key_schema
         partition_key_name = key_schema[0]["AttributeName"]
+        if len(key_schema) > 1:
+            sort_key_name = key_schema[1]["AttributeName"]
         
+        key = {partition_key_name: partition_key_value}
+
+        if sort_key_value:
+            key[sort_key_name] = sort_key_value
+
+        converted_item_data = DynamoDBUtils.convert_floats_to_decimal(item_data)
+
         item = {
-            partition_key_name: partition_key_value,
+            **key,
             **{k: v for k, v in converted_item_data.items() if k not in excluded_keys},
         }
         
@@ -80,10 +88,10 @@ class DynamoDBUtils:
         except ClientError as e:
             print("Error:", e)
 
-    def store_to_dynamodb(data, table_name, partition_key_value):
+    def store_to_dynamodb(data, table_name, partition_key_value, sort_key_value = None):
         try:
             db_table = DynamoDBUtils.get_table(table_name)
-            DynamoDBUtils.put_item(db_table, partition_key_value, data)
+            DynamoDBUtils.put_item(db_table, partition_key_value, data, sort_key_value=sort_key_value)
         except ClientError as e:
             print("Error storing data to DynamoDB:", e)
 
@@ -103,6 +111,7 @@ class DynamoDBUtils:
         except ClientError as e:
             print("Error loading league data from DynamoDB:", e)
             return None
+
 
 class PostgreSQLUtils:
     """
