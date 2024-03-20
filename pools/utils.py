@@ -13,9 +13,9 @@ class DynamoDBUtils:
     Utility functions for working with DynamoDB.
     """
     op = OnePassword()
-    aws_access_key_id = op.get_item(credentials.aws_uuid, 'access_key_id')
-    aws_secret_access_key = op.get_item(credentials.aws_uuid, 'secret_access_key')
-    region_name = op.get_item(credentials.aws_uuid, 'region')
+    aws_access_key_id = op.get_item(credentials.aws_uuid, 'access_key_id')['access_key_id']
+    aws_secret_access_key = op.get_item(credentials.aws_uuid, 'secret_access_key')['secret_access_key']
+    region_name = op.get_item(credentials.aws_uuid, 'region')['region']
 
     def convert_floats_to_decimal(data):
         """
