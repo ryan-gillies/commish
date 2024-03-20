@@ -19,6 +19,8 @@ class Pool(ABC):
     Abstract base class representing a generic pool.
     """
 
+    DB_TABLE = "pools"
+
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
         Initialize a Pool object.
@@ -37,7 +39,7 @@ class Pool(ABC):
         self.week = week
         self.paid = False
         self.label = pool_id.replace("_", " ").title()
-        # self.save_to_dynamodb()
+        DynamoDBUtils.store_to_dynamodb(self.__dict__, Pool.DB_TABLE, self.pool_id, self.league.league_id, excluded_keys=['league'])
 
     def __str__(self):
         """
@@ -177,13 +179,12 @@ class SidePool(Pool, ABC):
         from league import League
 
         super().__init__(pool_id, league, payout_pct, week)
-        self.set_payout_amount()
 
     def set_payout_amount(self):
         """
         Set the payout amount for the side pool.
         """
-        self.payout_amount = round(self.payout_pct * self.league.side_pot, 2)
+        return round(self.payout_pct * self.league.side_pot, 2)
 
 
 class MainPool(Pool, ABC):
@@ -207,13 +208,12 @@ class MainPool(Pool, ABC):
         from league import League
 
         super().__init__(pool_id, league, payout_pct, week)
-        self.set_payout_amount()
 
     def set_payout_amount(self):
         """
         Set the payout amount for the main pool.
         """
-        self.payout_amount = round(self.payout_pct * self.league.main_pot, 2)
+        return round(self.payout_pct * self.league.main_pot, 2)
 
 
 class SeasonPool(SidePool, ABC):
@@ -265,7 +265,7 @@ class SpecialWeekPool(SidePool, ABC):
         """
         Set the payout amount for the side pool.
         """
-        self.payout_amount = round(
+        return round(
             (self.payout_pct * self.league.side_pot)
             / (1 if not self.winners else self.winners),
             2,

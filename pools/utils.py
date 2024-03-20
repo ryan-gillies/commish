@@ -88,10 +88,10 @@ class DynamoDBUtils:
         except ClientError as e:
             print("Error:", e)
 
-    def store_to_dynamodb(data, table_name, partition_key_value, sort_key_value = None):
+    def store_to_dynamodb(data, table_name, partition_key_value, sort_key_value = None, excluded_keys = None):
         try:
             db_table = DynamoDBUtils.get_table(table_name)
-            DynamoDBUtils.put_item(db_table, partition_key_value, data, sort_key_value=sort_key_value)
+            DynamoDBUtils.put_item(db_table, partition_key_value, data, sort_key_value=sort_key_value, excluded_keys=excluded_keys)
         except ClientError as e:
             print("Error storing data to DynamoDB:", e)
 
