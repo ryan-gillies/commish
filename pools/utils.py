@@ -49,6 +49,7 @@ class DynamoDBUtils:
         db_table = dynamodb.Table(table_name)
         return db_table
 
+
     def put_item(db_table, partition_key_value, item_data, sort_key_value = None, excluded_keys = None):
         """
         Put an item into DynamoDB table.
@@ -137,7 +138,7 @@ class PostgreSQLUtils:
             if_exists (str): Action to take if the table already exists (default: "append").
         """
         con = sqlalchemy.create_engine(
-            "postgresql://retool:pubA9CUnmK5F@ep-icy-salad-54868721.us-west-2.retooldb.com/retool?sslmode=require"
+            "postgresql://retool:ZHVhmOA2Tb4i@ep-icy-salad-54868721.us-west-2.retooldb.com/retool?sslmode=require"
         ).connect()
         try:
             data.to_sql(
