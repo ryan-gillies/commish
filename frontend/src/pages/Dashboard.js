@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-import CTA from '../components/CTA'
-import InfoCard from '../components/Cards/InfoCard'
+import InfoCard from '../components/Cards/LeaderboardCard'
 import ChartCard from '../components/Chart/ChartCard'
 import { Doughnut, Line } from 'react-chartjs-2'
 import ChartLegend from '../components/Chart/ChartLegend'
@@ -52,9 +51,7 @@ function Dashboard() {
     <>
       <PageTitle>Dashboard</PageTitle>
 
-      <CTA />
-
-      {/* <!-- Cards --> */}
+      {/* <!-- Cards -->
       <div className="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
         <InfoCard title="Total clients" value="6389">
           <RoundIcon
@@ -91,7 +88,7 @@ function Dashboard() {
             className="mr-4"
           />
         </InfoCard>
-      </div>
+      </div> */}
 
       <TableContainer>
         <Table>

@@ -1,10 +1,3 @@
-/**
- * ⚠ These are used just to render the Sidebar!
- * You can include any link here, local or external.
- *
- * If you're looking to actual Router routes, go to
- * `routes/index.js`
- */
 const routes = [
   {
     path: '/app/dashboard', // the url
@@ -12,62 +5,33 @@ const routes = [
     name: 'Dashboard', // name that appear in Sidebar
   },
   {
-    path: '/app/forms',
-    icon: 'FormsIcon',
-    name: 'Forms',
-  },
-  {
-    path: '/app/cards',
-    icon: 'CardsIcon',
-    name: 'Cards',
-  },
-  {
-    path: '/app/charts',
-    icon: 'ChartsIcon',
-    name: 'Charts',
-  },
-  {
-    path: '/app/buttons',
-    icon: 'ButtonsIcon',
-    name: 'Buttons',
-  },
-  {
-    path: '/app/modals',
-    icon: 'ModalsIcon',
-    name: 'Modals',
-  },
-  {
-    path: '/app/tables',
-    icon: 'TablesIcon',
-    name: 'Tables',
-  },
-  {
-    icon: 'PagesIcon',
-    name: 'Pages',
+    icon: 'MoneyIcon',
+    name: 'Side Pools',
     routes: [
       // submenu
       {
-        path: '/login',
-        name: 'Login',
+        path: '/app/leaderboards',
+        icon: 'TablesIcon',
+        name: 'Leaderboards',
       },
       {
-        path: '/create-account',
-        name: 'Create account',
-      },
-      {
-        path: '/forgot-password',
-        name: 'Forgot password',
-      },
-      {
-        path: '/app/404',
-        name: '404',
-      },
-      {
-        path: '/app/blank',
-        name: 'Blank',
+        path: '/app/payouts',
+        icon: 'MoneyIcon',
+        name: 'Payouts',
       },
     ],
   },
+  {
+    path: '/app/record_book',
+    icon: 'PagesIcon',
+    name: 'Record Book',
+  },
+  {
+    external: true,
+    path: 'https://sleeper.app',
+    icon: 'OutlineLogoutIcon',
+    name: 'Go to Sleeper',
+  }
 ]
 
 export default routes

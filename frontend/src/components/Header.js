@@ -40,16 +40,6 @@ function Header() {
         </button>
         {/* <!-- Search input --> */}
         <div className="flex justify-center flex-1 lg:mr-32">
-          <div className="relative w-full max-w-xl mr-6 focus-within:text-purple-500">
-            <div className="absolute inset-y-0 flex items-center pl-2">
-              <SearchIcon className="w-4 h-4" aria-hidden="true" />
-            </div>
-            <Input
-              className="pl-8 text-gray-700"
-              placeholder="Search for projects"
-              aria-label="Search"
-            />
-          </div>
         </div>
         <ul className="flex items-center flex-shrink-0 space-x-6">
           {/* <!-- Theme toggler --> */}
@@ -88,19 +78,12 @@ function Header() {
               onClose={() => setIsNotificationsMenuOpen(false)}
             >
               <DropdownItem tag="a" href="#" className="justify-between">
-                <span>Messages</span>
-                <Badge type="danger">13</Badge>
-              </DropdownItem>
-              <DropdownItem tag="a" href="#" className="justify-between">
-                <span>Sales</span>
-                <Badge type="danger">2</Badge>
-              </DropdownItem>
-              <DropdownItem onClick={() => alert('Alerts!')}>
-                <span>Alerts</span>
+                <span>Stay Tuned!</span>
+                {/* <Badge type="danger">13</Badge> */}
               </DropdownItem>
             </Dropdown>
           </li>
-          {/* <!-- Profile menu --> */}
+          {/* <!-- Profile menu -->
           <li className="relative">
             <button
               className="rounded-full focus:shadow-outline-purple focus:outline-none"
@@ -133,7 +116,7 @@ function Header() {
                 <span>Log out</span>
               </DropdownItem>
             </Dropdown>
-          </li>
+          </li> */}
         </ul>
       </div>
     </header>
