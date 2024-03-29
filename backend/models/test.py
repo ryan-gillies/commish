@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from league import League
-from pool import (
+from backend.models.pools.pool import (
     PropPool,
     HighestScoreOfWeekPool,
     HighestScoringMarginOfWeekPool,

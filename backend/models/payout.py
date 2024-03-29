@@ -5,17 +5,17 @@ from sqlalchemy.orm import relationship
 db = SQLAlchemy()
 
 class Payout(db.Model):
-    __tablename__ = "payouts"
+    __tablename__ = 'payouts'
+
     pool_id = db.Column(db.String, db.ForeignKey('pools.pool_id'), primary_key=True)
     amount = db.Column(db.Float)
-    week = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String)
-    venmo_id = db.Column(db.String, primary_key=True)
+    week = db.Column(db.Integer)
+    venmo_id = db.Column(db.String, db.ForeignKey('users.venmo_id'))
     paid = db.Column(db.Boolean)
-    season = db.Column(db.Integer, primary_key=True)
+    league_id = db.Column(db.String, db.ForeignKey('pools.league_id'), primary_key=True)
+    season = db.Column(db.Integer)
     
-    # Define the relationship to the Pool model
-    # pool = relationship("Pool", backref="payouts")
+    pool = relationship("Pool", backref="payouts")
 
     def save_to_database(self):
         try:

@@ -7,25 +7,37 @@ It includes abstract base classes for different types of pools and concrete
 implementations for specific pool types such as weekly, seasonal, and special week pools.
 """
 
-from abc import ABC, abstractmethod
-import sys
-from .utils import DynamoDBUtils
+from abc import ABC, ABCMeta, abstractmethod
 from decimal import Decimal
-from .stats import *
-from .user import User
-from .payout import Payout
+import logging
+import sys
+
+from flask_sqlalchemy import SQLAlchemy
 from onepassword import OnePassword
 from venmo_api import Client
-import logging
+
+from stats import *
+from user import User
+from payout import Payout
 
 
-class Pool(ABC):
-    """
-    Abstract base class representing a generic pool.
-    """
+db = SQLAlchemy()
 
-    __db_table_name = "pools"
-    __db_table = DynamoDBUtils.get_table(__db_table_name)
+class PoolMeta(type(db.Model), ABCMeta):
+    pass
+
+class Pool(ABC, db.Model, metaclass=PoolMeta):
+    __tablename__ = 'pools'
+
+    pool_id = db.Column(db.String, primary_key = True)
+    league_id = db.Column(db.String, db.ForeignKey('leagues.league_id'), primary_key=True)
+    winner = db.Column(db.String, db.ForeignKey('users.username'))
+    payout_amount = db.Column(db.Numeric)
+    week = db.Column(db.Integer)
+    paid = db.Column(db.Boolean)
+    label = db.Column(db.String)
+    pool_type = db.Column(db.String)
+    pool_subtype = db.Column(db.String)
 
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
@@ -39,13 +51,12 @@ class Pool(ABC):
         """
         self.pool_id = pool_id
         self.league = league
+        self.league_id = league.league_id
         self.payout_pct = payout_pct
-        self.winners = []
         self.payout_amount = self.set_payout_amount()
         self.week = week
         self.paid = False
         self.label = pool_id.replace("_", " ").title()
-        DynamoDBUtils.store_to_dynamodb(self.__dict__, Pool.__db_table_name, self.pool_id, self.league.league_id, excluded_keys=['league'])
 
     def __str__(self):
         """
@@ -55,7 +66,7 @@ class Pool(ABC):
             "pool": self.label,
             "week": self.week,
             "payout": self.payout_amount,
-            "winners": self.winners,
+            "winner": self.winner,
             "paid": self.paid,
         }
 
@@ -65,34 +76,21 @@ class Pool(ABC):
         return attr_string
 
 
-    def set_winners(self):
+    def set_winner(self):
         """
-        Set the winners of the pool.
+        Set the winner of the pool.
         """        
-        # Get winners and update DynamoDB
-        self.winners = self.set_pool_winner()
-        updated_winners = []
-        
-        for winner in self.winners:
-            user = User.get_user_by_roster_id(winner['roster_id'], self.league)
-            updated_winners.append(user.username)
+        self.winner = self.set_pool_winner()[0]
+        if self.winner:
+            user = User.get_user_by_roster_id(self.winner['roster_id'], self.league)
+            self.winner = user.username
+            self.winner_user = user
             
-        # Update DynamoDB with the updated winners list
-        Pool.__db_table.update_item(
-            Key={
-                'pool_id': self.pool_id,
-                'league_id': self.league.league_id
-            },
-            UpdateExpression="SET winners = :w",
-            ExpressionAttributeValues={
-                ':w': updated_winners
-            }
-        )
 
     @abstractmethod
     def set_pool_winner(self):
         """
-        Abstract method to set the winners(s) of the pool.
+        Abstract method to set the winner of the pool.
         """
         # get the user from the returned value
         
@@ -124,35 +122,33 @@ class Pool(ABC):
         )
 
         # Send payment via Venmo
-        for winner in self.winners:
-            try:
-                if not self.paid:
-                    payment_info = venmo_client.payment.send_money(
-                        amount=self.payout_amount,
-                        note=f"Payout for pool {self.label}, week {self.week}",
-                        target_user_id=winner.get_venmo_id()
-                    )
-                    logging.info(f"Payment sent to {winner.get_username()} via Venmo: {payment_info}")
-                # Create payout item in the database
-                payout = Payout(
-                    pool_id=self.pool_id,
+        try:
+            if not self.paid:
+                payment_info = venmo_client.payment.send_money(
                     amount=self.payout_amount,
-                    week=self.week,
-                    user_name=winner.get_name(),
-                    venmo_id=winner.get_venmo_id(),
-                    paid=True,  # Mark as paid since payment was successful
-                    season=self.league.season
+                    note=f"Payout for pool {self.label}, week {self.week}",
+                    target_user_id=self.winner_user.get_venmo_id()
                 )
-                try:
-                    payout.save_to_database()
-                    logging.info("Payout item created in the database.")
-                    return True
-                except Exception as e:
-                    logging.error(f"Failed to create payout item in the database: {e}")
-                    return False
+                logging.info(f"Payment sent to {self.winner} via Venmo: {payment_info}")
+            # Create payout item in the database
+            payout = Payout(
+                pool_id=self.pool_id,
+                amount=self.payout_amount,
+                week=self.week,
+                venmo_id=self.winner_user.get_venmo_id(),
+                paid=True,  # Mark as paid since payment was successful
+                season=self.league.season
+            )
+            try:
+                payout.save_to_database()
+                logging.info("Payout item created in the database.")
+                return True
             except Exception as e:
-                logging.error(f"Failed to send payment to {winner.get_username()} via Venmo: {e}")
+                logging.error(f"Failed to create payout item in the database: {e}")
                 return False
+        except Exception as e:
+            logging.error(f"Failed to send payment to {self.winner} via Venmo: {e}")
+            return False
 
     @classmethod
     def create_pools(cls, league, **kwargs):
@@ -314,13 +310,35 @@ class SpecialWeekPool(SidePool, ABC):
         """
         super().__init__(league, pool_id, payout_pct, week)
 
+    @classmethod
+    def create_pools_for_matchups(cls, league, payout_pct: Decimal, week):
+        """
+        Create Pool instances for each matchup.
+
+        Args:
+            league (League): The league object.
+            payout_pct (Decimal): The payout percentage.
+            week (int): The week of the pool.
+
+        Returns:
+            List: List of created Pool instances.
+        """
+        matchup_winners = MatchupStats.get_head_to_head_winners(league, week=week)
+        matchups = {match["matchup_id"] for match in matchup_winners}
+        pools = []
+        for matchup in matchups:
+            pool_instance = cls(league, f"{cls.pool_id}_{matchup}", payout_pct, week)
+            pools.append(pool_instance)
+        return pools
+
+
     def set_payout_amount(self):
         """
         Set the payout amount for the side pool.
         """
         return round(
             (self.payout_pct * self.league.side_pot)
-            / (1 if not self.winners else self.winners),
+            / (1 if not self.winner else self.winner),
             2,
         )
 
@@ -392,8 +410,8 @@ class PropPool(SidePool):
         """
         Set the winners of the prop pool.
         """
-        winners_roster_id = input("Enter roster_id of winners: ")
-        return [{"roster_id": winners_roster_id}]
+        winner_roster_id = input("Enter roster_id of winner: ")
+        return [{"roster_id": winner_roster_id}]
 
 
 class HighestScoreOfWeekPool(WeeklyPool):
@@ -424,7 +442,7 @@ class HighestScoreOfWeekPool(WeeklyPool):
 
     def set_pool_winner(self):
         """
-        Set the winners(s) of the pool based on the highest team score of the week.
+        Set the winner of the pool based on the highest team score of the week.
         """
         return MatchupStats.get_high_team_score(self.league, week=self.week)
 
@@ -457,7 +475,7 @@ class HighestScoringMarginOfWeekPool(WeeklyPool):
 
     def set_pool_winner(self):
         """
-        Set the winners(s) of the pool based on the highest scoring margin of the week.
+        Set the winner of the pool based on the highest scoring margin of the week.
         """
         return MatchupStats.get_high_scoring_margin(self.league, week=self.week)
 
@@ -490,7 +508,7 @@ class HighestScoringPlayerOfWeekPool(WeeklyPool):
 
     def set_pool_winner(self):
         """
-        Set the winners(s) of the pool based on the highest scoring player of the week.
+        Set the winner of the pool based on the highest scoring player of the week.
         """
         return PlayerStats.get_high_player_score(self.league, week=self.week)
 
@@ -627,20 +645,30 @@ class OpeningWeekWinnersPool(SpecialWeekPool):
     def __init__(self, league, payout_pct: Decimal):
         super().__init__(
             league,
-            "each_winners_of_opening_week",
+            "each_winner_of_opening_week",
             payout_pct,
             league.OPENING_WEEK,
         )
 
     def set_pool_winner(self):
-        return MatchupStats.get_head_to_head_winners(self.league, week=self.week)
+        """
+        Set the winner of the pool.
 
+        Returns:
+            List[int]: List of Matchup IDs.
+        """
+        winners = MatchupStats.get_head_to_head_winners(self.league, week=self.week)
+        # pools = []
+        # for winner in winners:
+        #     pool_instance = OpeningWeekWinnersPool(league=self.league, payout_pct=self.payout_pct, winner)
+        #     pools.append(pool_instance)
+        # return pools
 
 class RivalryWeekWinnersPool(SpecialWeekPool):
     def __init__(self, league, payout_pct: Decimal):
         super().__init__(
             league,
-            "each_winners_of_rivalry_week",
+            "each_winner_of_rivalry_week",
             payout_pct,
             league.RIVALRY_WEEK,
         )
@@ -653,7 +681,7 @@ class LastWeekWinnersPool(SpecialWeekPool):
     def __init__(self, league, payout_pct: Decimal):
         super().__init__(
             league,
-            "each_winners_of_last_week",
+            "each_winner_of_last_week",
             payout_pct,
             league.LAST_WEEK,
         )
@@ -673,7 +701,7 @@ class LeagueWinner(MainPool):
 
     def set_pool_winner(self):
         """
-        Set the winners of the prop pool.
+        Set the winner of the prop pool.
         """
         match = next(
             (
@@ -697,7 +725,7 @@ class LeagueRunnerUp(MainPool):
 
     def set_pool_winner(self):
         """
-        Set the winners of the prop pool.
+        Set the winner of the prop pool.
         """
         match = next(
             (
@@ -721,7 +749,7 @@ class LeagueThirdPlace(MainPool):
 
     def set_pool_winner(self):
         """
-        Set the winners of the prop pool.
+        Set the winner of the prop pool.
         """
         match = next(
             (
@@ -732,4 +760,3 @@ class LeagueThirdPlace(MainPool):
             None,
         )
         return match.get("w")
-

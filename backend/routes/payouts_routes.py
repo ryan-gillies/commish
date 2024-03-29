@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 from sqlalchemy import func
-from pools.payout import Payout
+from models.payout import Payout
 
 payouts_bp = Blueprint('payouts', __name__)
 

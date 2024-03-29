@@ -5,7 +5,7 @@ import sqlalchemy
 from botocore.exceptions import ClientError
 from boto3.dynamodb.conditions import Key
 from sleeper_wrapper import League
-import pools.config.credentials as credentials
+import config.credentials as credentials
 from onepassword import OnePassword
 
 class DynamoDBUtils:

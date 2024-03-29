@@ -27,7 +27,7 @@ class User(Model):
     venmo_id = UnicodeAttribute()   
     roster_id = MapAttribute()
 
-    with open("pools/config/venmo_ids.yaml", "r", encoding="utf-8") as f:
+    with open("backend/models/config/venmo_ids.yaml", "r", encoding="utf-8") as f:
         venmo_ids = yaml.load(f, Loader=yaml.SafeLoader)
 
     def __init__(self, user_data: Dict[str, str], league):

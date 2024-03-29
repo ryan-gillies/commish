@@ -13,7 +13,7 @@ print(pools)
 
 
 for pool in pools.values():
-    pool.set_winners()
+    pool.set_winner()
 
 users = sleeperpy.Leagues.get_users(league.league_id)
 for user in users:

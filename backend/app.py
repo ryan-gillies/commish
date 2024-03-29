@@ -1,5 +1,5 @@
 from flask import Flask
-from pools.payout import db
+from models.payout import db
 from routes.payouts_routes import payouts_bp
 # from users_routes import users_bp
 

@@ -13,8 +13,8 @@ Classes:
 from sleeperpy import Leagues, Players
 import yaml
 from decimal import Decimal
-from .pool import Pool
-from .utils import DynamoDBUtils
+from pool import Pool
+from utils import DynamoDBUtils
 import pandas as pd
 
 
@@ -96,7 +96,7 @@ class League:
         Returns:
             dict: The loaded configuration.
         """
-        with open(f"pools/config/{self.season}.yaml", "r") as file:
+        with open(f"backend/models/config/{self.season}.yaml", "r") as file:
             return yaml.safe_load(file)
 
     def _set_season(self):
