@@ -1,21 +1,21 @@
 import logging
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
+from extensions import db
 
-db = SQLAlchemy()
 
 class Payout(db.Model):
     __tablename__ = 'payouts'
 
-    pool_id = db.Column(db.String, db.ForeignKey('pools.pool_id'), primary_key=True)
+    pool_id = db.Column(db.String, db.ForeignKey('pool.pool_id'), primary_key=True)
     amount = db.Column(db.Float)
     week = db.Column(db.Integer)
-    venmo_id = db.Column(db.String, db.ForeignKey('users.venmo_id'))
+    username = db.Column(db.String, db.ForeignKey('users.username'))
+    # venmo_id = db.Column(db.String, db.ForeignKey('users.venmo_id'))
     paid = db.Column(db.Boolean)
-    league_id = db.Column(db.String, db.ForeignKey('pools.league_id'), primary_key=True)
+    # league_id = db.Column(db.String, primary_key=True)
     season = db.Column(db.Integer)
     
-    pool = relationship("Pool", backref="payouts")
+    # pool = relationship("Pool", backref="payouts")
 
     def save_to_database(self):
         try:

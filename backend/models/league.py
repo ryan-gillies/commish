@@ -13,9 +13,10 @@ Classes:
 from sleeperpy import Leagues, Players
 import yaml
 from decimal import Decimal
-from pool import Pool
-from utils import DynamoDBUtils
+from .pool import Pool
+from .utils import DynamoDBUtils
 import pandas as pd
+from extensions import db
 
 
 class League:

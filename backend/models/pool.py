@@ -12,16 +12,14 @@ from decimal import Decimal
 import logging
 import sys
 
-from flask_sqlalchemy import SQLAlchemy
+from extensions import db
 from onepassword import OnePassword
 from venmo_api import Client
 
-from stats import *
-from user import User
-from payout import Payout
+from .stats import *
+from .user import User
+from .payout import Payout
 
-
-db = SQLAlchemy()
 
 class PoolMeta(type(db.Model), ABCMeta):
     pass
@@ -30,7 +28,7 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
     __tablename__ = 'pools'
 
     pool_id = db.Column(db.String, primary_key = True)
-    league_id = db.Column(db.String, db.ForeignKey('leagues.league_id'), primary_key=True)
+    league_id = db.Column(db.String, primary_key=True)
     winner = db.Column(db.String, db.ForeignKey('users.username'))
     payout_amount = db.Column(db.Numeric)
     week = db.Column(db.Integer)

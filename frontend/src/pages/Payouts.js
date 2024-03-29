@@ -105,13 +105,13 @@ function Tables() {
             <TableCell
               className="cursor-pointer"
               onClick={() => {
-                setSortBy('venmo_id');
+                setSortBy('username');
                 setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
               }}
             >
               <div className="flex items-center">
                 User
-                {sortBy === 'venmo_id' && (
+                {sortBy === 'username' && (
                   <Icon
                     className={`ml-1 transform ${sortDirection === 'asc' ? 'rotate-180' : ''}`}
                     icon={arrowDown}
@@ -145,7 +145,7 @@ function Tables() {
                   <div className="flex items-center text-sm">
                     <Avatar className="hidden mr-3 md:block" src={user.avatar} alt="User avatar" />
                     <div>
-                      <p className="font-semibold">{user.venmo_id}</p>
+                      <p className="font-semibold">{user.username}</p>
                       <p className="text-xs text-gray-600 dark:text-gray-400">{user.job}</p>
                     </div>
                   </div>

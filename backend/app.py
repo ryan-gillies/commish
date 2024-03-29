@@ -1,7 +1,7 @@
 from flask import Flask
-from models.payout import db
+from extensions import db
 from routes.payouts_routes import payouts_bp
-# from users_routes import users_bp
+
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = (
@@ -11,7 +11,7 @@ db.init_app(app)
 
 # Register Blueprints
 app.register_blueprint(payouts_bp)
-# app.register_blueprint(users_bp)
 
+# Run the initialization function when the application starts
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,11 +1,19 @@
 from typing import Dict
 import yaml
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import insert
 from sleeperpy import Leagues
-from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, MapAttribute
+from extensions import db
+import logging
 
+class Roster(db.Model):
+    __tablename__ = 'rosters'
 
-class User(Model):
+    user_id = db.Column(db.String, db.ForeignKey('users.user_id'), primary_key=True)
+    league_id = db.Column(db.String, primary_key=True)
+    roster_id = db.Column(db.String)
+
+class User(db.Model):
     """
     Represents a user in the Sleeper fantasy football application.
 
@@ -17,15 +25,15 @@ class User(Model):
         roster_id (Dict[str, str]): A dictionary mapping league IDs to the user's roster ID for that league.
     """
 
-    class Meta:
-        table_name = "users"
+    __tablename__ = "users"
 
-    username = UnicodeAttribute(hash_key=True)
-    name = UnicodeAttribute()
-    user_id = UnicodeAttribute()
-    avatar = UnicodeAttribute()
-    venmo_id = UnicodeAttribute()   
-    roster_id = MapAttribute()
+    username = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String)
+    user_id = db.Column(db.String)
+    avatar = db.Column(db.String)
+    venmo_id = db.Column(db.String)   
+
+    rosters = relationship("Roster", backref="user")
 
     with open("backend/models/config/venmo_ids.yaml", "r", encoding="utf-8") as f:
         venmo_ids = yaml.load(f, Loader=yaml.SafeLoader)
@@ -41,9 +49,8 @@ class User(Model):
         self.username = user_data.get("username", user_data.get("display_name"))
         self.avatar = user_data["avatar"]
         self.venmo_id = User.venmo_ids.get(self.username, "")
-        self.league_id = league.league_id
-        self.roster_id = str(self.set_roster_id(league.league_id))
-        self.save()
+        self.roster_id = self.set_roster_id(league.league_id)
+        self.save_to_database()
 
     def __str__(self):
         """
@@ -63,26 +70,40 @@ class User(Model):
             if league["owner_id"] == self.user_id:
                 return league["roster_id"]
 
-    @classmethod
-    def get_user_by_roster_id(cls, roster_id, league):
-        """
-        Get a user object by roster ID from the DynamoDB table.
-
-        Args:
-            roster_id (str): The roster ID to search for.
-            league (League): The league object.
-
-        Returns:
-            User: The user object with the specified roster ID, or None if not found.
-        """
+    def save_to_database(self):
         try:
-            user_item = cls.get(
-                cls.username
-                == cls.db_table.query(
-                    cls.roster_id[league.league_id] == str(roster_id)
-                ).first()
+            stmt = insert(User).values(
+                user_id = self.user_id,
+                username = self.username,
+                name = self.name,
+                avatar = self.avatar,
+                venmo_id = self.venmo_id,
             )
-            return user_item
-        except cls.DoesNotExist:
-            return None
-            
+            stmt = stmt.on_conflict_do_update(
+                index_elements=['username'],
+                set_={
+                    'avatar': self.avatar,
+                    'venmo_id': self.venmo_id,
+                    'username': self.username,
+                }
+            )
+            db.session.execute(stmt)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Failed to add user to database: {e}")
+            raise
+
+    # @classmethod
+    # def get_user_by_roster_id(cls, roster_id, league):
+    #     """
+    #     Get a user object by roster ID from the database.
+
+    #     Args:
+    #         roster_id (str): The roster ID to search for.
+    #         league (League): The league object.
+
+    #     Returns:
+    #         User: The user object with the specified roster ID, or None if not found.
+    #     """
+    #     return cls.query.filter_by(roster_id={league.league_id: str(roster_id)}).first()
