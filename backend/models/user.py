@@ -11,7 +11,8 @@ class Roster(db.Model):
 
     username = db.Column(db.String, db.ForeignKey('users.username'), primary_key=True)
     league_id = db.Column(db.String, primary_key=True)
-    roster_id = db.Column(db.String)
+    roster_id = db.Column(db.Integer)
+    
 
 class User(db.Model):
     """
@@ -22,7 +23,6 @@ class User(db.Model):
         username (str): The user's display name in Sleeper.
         avatar (str): The URL of the user's avatar image.
         venmo_id (str, optional): The user's Venmo user ID for payouts.
-        roster_id (Dict[str, str]): A dictionary mapping league IDs to the user's roster ID for that league.
     """
 
     __tablename__ = "users"
@@ -38,7 +38,7 @@ class User(db.Model):
     with open("backend/models/config/venmo_ids.yaml", "r", encoding="utf-8") as f:
         venmo_ids = yaml.load(f, Loader=yaml.SafeLoader)
 
-    def __init__(self, user_data: Dict[str, str], league):
+    def __init__(self, user_data: Dict[str, str], league_id):
         """
         Initializes a User object.
 
@@ -49,7 +49,8 @@ class User(db.Model):
         self.username = user_data.get("username", user_data.get("display_name"))
         self.avatar = user_data["avatar"]
         self.venmo_id = User.venmo_ids.get(self.username, "")
-        self.roster_id = self.set_roster_id(league.league_id)
+        self.league_id = league_id
+        self.roster_id = self.set_roster(self.league_id)
         self.save_to_database()
 
     def __str__(self):
@@ -61,14 +62,26 @@ class User(db.Model):
         """
         return f"User(user_id={self.user_id}, username={self.username}, current_roster_id = {self.roster_id}, avatar={self.avatar}, venmo_id={self.venmo_id})"
 
-    def set_roster_id(self, league_id):
+    def set_roster(self, league_id):
         """
-        Adds roster ID by league ID for the user.
+        Finds and returns the roster ID for the user in the specified league.
+
+        Args:
+            league_id (str): The league ID to search for.
+
+        Returns:
+            str: The user's roster ID in the given league, or None if not found.
         """
         rosters = Leagues.get_rosters(league_id)
-        for league in rosters:
-            if league["owner_id"] == self.user_id:
-                return league["roster_id"]
+        for roster in rosters:
+            if roster["owner_id"] == self.user_id:
+                roster = Roster(
+                username=self.username,
+                league_id=league_id,
+                roster_id=roster["roster_id"]
+                )
+                return roster
+        return None 
 
     def save_to_database(self):
         try:
@@ -88,22 +101,48 @@ class User(db.Model):
                 }
             )
             db.session.execute(stmt)
+            self.roster = self.set_roster(self.league_id)
+            try:
+                self.roster_id = self.roster.roster_id
+            except:
+                self.roster_id = None
+
+            existing_roster = Roster.query.get((self.username, self.league_id))
+            if existing_roster:
+                pass
+            else:
+                db.session.add(Roster(
+                    username=self.username,
+                    league_id=self.league_id,
+                    roster_id=self.roster_id  # Assuming set_roster_id sets this
+                ))
+
             db.session.commit()
+
         except Exception as e:
             db.session.rollback()
             logging.error(f"Failed to add user to database: {e}")
             raise
 
-    # @classmethod
-    # def get_user_by_roster_id(cls, roster_id, league):
-    #     """
-    #     Get a user object by roster ID from the database.
+    @classmethod
+    def get_user_by_roster_id(self, roster_id, league_id):
+        """
+        Fetches a user object based on the specified league ID and roster ID.
 
-    #     Args:
-    #         roster_id (str): The roster ID to search for.
-    #         league (League): The league object.
+        Args:
+            league_id (str): The league ID to search for.
+            roster_id (str): The roster ID to search for.
 
-    #     Returns:
-    #         User: The user object with the specified roster ID, or None if not found.
-    #     """
-    #     return cls.query.filter_by(roster_id={league.league_id: str(roster_id)}).first()
+        Returns:
+            User: The user object if found, otherwise None.
+        """
+
+        query = self.query.join(
+            Roster, User.username == Roster.username
+        ).filter(
+            Roster.league_id == league_id,
+            Roster.roster_id == roster_id
+        ).first()
+
+        return query
+    

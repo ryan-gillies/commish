@@ -1,0 +1,20 @@
+buy_ins:
+  main_buy_in: 100
+  side_buy_in: 0
+
+optouts: []
+
+credentials:
+  venmo_uuid: fem2trbtqnwjpyn2cmqqhl5gju
+  sleeper_user_id: '457014438138998784'
+  aws_uuid: 4f74ky5bljkgbejidxcjxwdlpi
+
+main_pools:
+  - pool: LeagueWinner
+    payout: 0.6666666667
+
+  - pool: LeagueRunnerUp
+    payout: 0.25
+  
+  - pool: LeagueThirdPlace
+    payout: 0.0833333333

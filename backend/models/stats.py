@@ -59,16 +59,28 @@ class MatchupStats(Stats):
             list: A list of dictionaries containing week, matchup_id, and matchup_margin.
         """
         if week is not None:
-            eligible_margins = [
-                match for match in league.head_to_head if match["week"] == week
+            head_to_head = [
+                match for match in league.head_to_head if match.get("week") == week
             ]
         else:
-            eligible_margins = league.head_to_head
+            head_to_head = [
+                match for match in league.head_to_head
+            ]
 
-        eligible_margins = Stats.filter_out_optouts(eligible_margins, league)
-        sorted_margins = sorted(eligible_margins, key=lambda x: x["matchup_margin"])
-        return sorted_margins[:top_n]
-
+        eligible_margins = Stats.filter_out_optouts(head_to_head, league)
+        sorted_margins = sorted(
+            eligible_margins, key=lambda x: x["matchup_margin"], reverse=False
+        )
+        return [
+            {
+                "week": match["week"],
+                "matchup_id": match["matchup_id"],
+                "roster_id": match["matchup_loser"],
+                "matchup_margin": match["matchup_margin"],
+                "opponent": match["matchup_winner"],
+            }
+            for match in sorted_margins[:top_n]
+        ]
 
     def get_high_scoring_margin(league, week=None, top_n=1):
         """
@@ -83,12 +95,13 @@ class MatchupStats(Stats):
         """
 
         if week is not None:
-            head_to_head = [match for match in league.head_to_head if match.get("week") == week]
+            head_to_head = [
+                match for match in league.head_to_head if match.get("week") == week
+            ]
         else:
             head_to_head = [
-                match for matches in league.head_to_head.values() for match in matches
+                match for match in league.head_to_head
             ]
-
 
         eligible_margins = Stats.filter_out_optouts(head_to_head, league)
         sorted_margins = sorted(
@@ -159,9 +172,7 @@ class MatchupStats(Stats):
         if week is not None:
             head_to_head = [match for match in league.head_to_head.get(week, [])]
         else:
-            head_to_head = [
-                match for matches in league.head_to_head.values() for match in matches
-            ]
+            head_to_head = [match for match in league.head_to_head]
 
         eligible_scores_against = Stats.filter_out_optouts(head_to_head, league)
         sorted_scores_against = sorted(

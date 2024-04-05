@@ -16,6 +16,7 @@ from decimal import Decimal
 import pandas as pd
 from sqlalchemy.orm import relationship
 from extensions import db
+from sqlalchemy import Column, String, Integer, Float, ARRAY
 
 class League(db.Model):
     """
@@ -26,17 +27,18 @@ class League(db.Model):
 
     __tablename__ = 'leagues'
 
-    season = db.Column(db.Integer)
-    week = db.Column(db.Integer)
-    sleeper_user_id = db.Column(db.String)
-    league_id = db.Column(db.String, primary_key=True)
-    main_buy_in = db.Column(db.Float)
-    side_buy_in = db.Column(db.Float)
-    team_count = db.Column(db.Integer)
-    side_pool_count = db.Column(db.Integer)
-    main_pot = db.Column(db.Float)
-    side_pot = db.Column(db.Float)
-    site = db.Column(db.String)
+    season = Column(Integer)
+    week = Column(Integer)
+    sleeper_user_id = Column(String)
+    league_id = Column(String, primary_key=True)
+    main_buy_in = Column(Float)
+    side_buy_in = Column(Float)
+    team_count = Column(Integer)
+    side_pool_count = Column(Integer)
+    main_pot = Column(Float)
+    side_pot = Column(Float)
+    site = Column(String)
+    optouts = Column(ARRAY(String))
 
     REGULAR_SEASON = list(range(1, 15))
     OPENING_WEEK = REGULAR_SEASON[0]
@@ -59,15 +61,15 @@ class League(db.Model):
         self.state = Leagues.get_state("nfl")
         if league_data:
             self._load_from_database(league_data)
+            self.optouts = self._get_optouts()
         else:
             self.create_new_league()
             db.session.add(self)
-            print(type(self.pools[0]))
             db.session.commit()
-            self.fetch_matchups()
-            self.get_head_to_head()
-            self.fetch_player_stats()
-            self.fetch_team_stats()
+        self.fetch_matchups()
+        self.get_head_to_head()
+        self.fetch_player_stats()
+        self.fetch_team_stats()
 
     def _load_from_database(self, league_data):
         """
@@ -285,22 +287,22 @@ class League(db.Model):
         pools_list = Pool.create_pools(self)
         pools = {pool.pool_id: pool for pool in pools_list}
 
-        # Validate the total payout amounts of side and main pools
-        side_payout_total = sum(
-            pool.payout_amount for pool in pools.values() if pool.pool_type == "side"
-        )
-        main_payout_total = sum(
-            pool.payout_amount for pool in pools.values() if pool.pool_type == "main"
-        )
+        # # Validate the total payout amounts of side and main pools
+        # side_payout_total = sum(
+        #     pool.payout_amount for pool in pools.values() if pool.pool_type == "side"
+        # )
+        # main_payout_total = sum(
+        #     pool.payout_amount for pool in pools.values() if pool.pool_type == "main"
+        # )
 
-        if round(side_payout_total, 2) != round(self.side_pot, 2):
-            raise ValueError(
-                "Total payout amount for side pools does not match side pot."
-            )
-        if round(main_payout_total, 2) != round(self.main_pot, 2):
-            raise ValueError(
-                "Total payout amount for main pools does not match main pot."
-            )
+        # if round(side_payout_total, 2) != round(self.side_pot, 2):
+        #     raise ValueError(
+        #         "Total payout amount for side pools does not match side pot."
+        #     )
+        # if round(main_payout_total, 2) != round(self.main_pot, 2):
+        #     raise ValueError(
+        #         "Total payout amount for main pools does not match main pot."
+        #     )
         return pools
 
     def __str__(self):
@@ -324,5 +326,5 @@ class League(db.Model):
         return attr_string
 
     def fetch_playoffs(self):
-        return Leagues.get_winners_playoff_bracket(self.league_id)
+        self.playoffs = Leagues.get_winners_playoff_bracket(self.league_id)
 

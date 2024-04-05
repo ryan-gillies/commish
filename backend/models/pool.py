@@ -9,6 +9,7 @@ implementations for specific pool types such as weekly, seasonal, and special we
 
 from abc import ABC, ABCMeta, abstractmethod
 from decimal import Decimal
+from sqlalchemy import update
 from sqlalchemy.orm import relationship
 import sys
 import logging
@@ -26,7 +27,6 @@ class PoolMeta(type(db.Model), ABCMeta):
 
 class Pool(ABC, db.Model, metaclass=PoolMeta):
     __tablename__ = 'pools'
-
     
     pool_id = db.Column(db.String, primary_key = True)
     league_id = db.Column(db.String, db.ForeignKey('leagues.league_id'),primary_key=True)
@@ -90,9 +90,12 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         """        
         self.winner = self.set_pool_winner()[0]
         if self.winner:
-            user = User.get_user_by_roster_id(self.winner['roster_id'], self.league)
+            user = User.get_user_by_roster_id(self.winner['roster_id'], self.league_id)
             self.winner = user.username
             self.winner_user = user
+            stmt = (update(Pool).where(Pool.pool_id == self.pool_id).where(Pool.league_id == self.league_id).values(winner=self.winner))
+            db.session.execute(stmt)
+            db.session.commit()
             
 
     @abstractmethod
@@ -716,7 +719,7 @@ class LeagueWinner(MainPool):
             ),
             None,
         )
-        return match.get("w")
+        return [{'roster_id':match.get("w")}]
 
 
 class LeagueRunnerUp(MainPool):
@@ -740,7 +743,7 @@ class LeagueRunnerUp(MainPool):
             ),
             None,
         )
-        return match.get("l")
+        return [{'roster_id':match.get("l")}]
 
 
 class LeagueThirdPlace(MainPool):
@@ -764,5 +767,5 @@ class LeagueThirdPlace(MainPool):
             ),
             None,
         )
-        return match.get("w")
+        return [{'roster_id':match.get("w")}]
 
