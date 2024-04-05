@@ -13,38 +13,30 @@ Classes:
 from sleeperpy import Leagues, Players
 import yaml
 from decimal import Decimal
-from .pool import Pool
-from .utils import DynamoDBUtils
 import pandas as pd
+from sqlalchemy.orm import relationship
 from extensions import db
 
-
-class League:
+class League(db.Model):
     """
     A class for managing league information and calculations.
 
     This class provides functionality to manage league information and calculations for Sleeper fantasy football leagues.
-
-    Attributes:
-        REGULAR_SEASON (list): A list representing regular season weeks.
-        OPENING_WEEK (int): The opening week of the regular season.
-        RIVALRY_WEEK (int): The week designated as the rivalry week.
-        LAST_WEEK (int): The last week of the regular season.
-        PLAYOFFS (list): A list representing playoff weeks.
-        CHAMPIONSHIP_WEEK (int): The week designated as the championship week.
-        state (dict): The state of the league.
-        season (int): The active season on Sleeper.
-        config (dict): The loaded configuration.
-        sleeper_user_id (str): The user ID for the Sleeper account.
-        main_buy_in (Decimal): The buy-in amount for the main pool.
-        side_buy_in (Decimal): The buy-in amount for the side pool.
-        league_id (str): The ID of the league for the current user.
-        week (int): The current week for the active season.
-        team_count (int): The number of teams in the league.
-        main_pot (Decimal): The total pot for the season's main pool.
-        side_pool_count (int): The number of teams opted in for the season's side pools.
-        side_pot (Decimal): The total pot for the season's side pool.
     """
+
+    __tablename__ = 'leagues'
+
+    season = db.Column(db.Integer)
+    week = db.Column(db.Integer)
+    sleeper_user_id = db.Column(db.String)
+    league_id = db.Column(db.String, primary_key=True)
+    main_buy_in = db.Column(db.Float)
+    side_buy_in = db.Column(db.Float)
+    team_count = db.Column(db.Integer)
+    side_pool_count = db.Column(db.Integer)
+    main_pot = db.Column(db.Float)
+    side_pot = db.Column(db.Float)
+    site = db.Column(db.String)
 
     REGULAR_SEASON = list(range(1, 15))
     OPENING_WEEK = REGULAR_SEASON[0]
@@ -52,7 +44,6 @@ class League:
     LAST_WEEK = REGULAR_SEASON[-1]
     PLAYOFFS = list(range(15, 18))
     CHAMPIONSHIP_WEEK = PLAYOFFS[-1]
-    DB_TABLE = "leagues"
 
     def __init__(self, season=None):
         if season is None:
@@ -64,19 +55,39 @@ class League:
         self.config = self._load_config()
         self.sleeper_user_id = self.config["credentials"]["sleeper_user_id"]
         self.league_id = self._set_league_id()
-        league_data = DynamoDBUtils.load_from_dynamodb(League.DB_TABLE, self.league_id)
+        league_data = self.query.filter_by(league_id=self.league_id).first()
         self.state = Leagues.get_state("nfl")
         if league_data:
-            self._load_from_dynamodb(league_data)
+            self._load_from_database(league_data)
         else:
             self.create_new_league()
-            DynamoDBUtils.store_to_dynamodb(self.__dict__, League.DB_TABLE, self.league_id )
+            db.session.add(self)
+            print(type(self.pools[0]))
+            db.session.commit()
             self.fetch_matchups()
             self.get_head_to_head()
             self.fetch_player_stats()
             self.fetch_team_stats()
 
+    def _load_from_database(self, league_data):
+        """
+        Load league data from the database.
+
+        Args:
+            league_data (League): League data fetched from the database.
+        """
+        self.season = league_data.season
+        self.week = league_data.week
+        self.main_buy_in = league_data.main_buy_in
+        self.side_buy_in = league_data.side_buy_in
+        self.team_count = league_data.team_count
+        self.side_pool_count = league_data.side_pool_count
+        self.main_pot = league_data.main_pot
+        self.side_pot = league_data.side_pot
+
+
     def create_new_league(self, season=None):
+        self.site = 'sleeper'
         self.main_buy_in = self.config["buy_ins"]["main_buy_in"]
         self.side_buy_in = self.config["buy_ins"]["side_buy_in"]
         self.optouts = self._get_optouts()
@@ -86,9 +97,6 @@ class League:
         self.side_pot = self.side_buy_in * self.side_pool_count
         self.setup_pools()
 
-    def _load_from_dynamodb(self, league_data):
-        for key, value in league_data.items():
-            setattr(self, key, value)
 
     def _load_config(self):
         """
@@ -169,11 +177,6 @@ class League:
             matchups_db = pd.DataFrame(matchups[week])
             matchups_db["league_id"] = self.league_id
             matchups_db["week"] = week
-            # PostgreSQLUtils.store_to_postgresql(
-            #     "sleeper_matchups",
-            #     matchups_db,
-            #     dtype={"players_points": sqlalchemy.types.JSON},
-            # )
         self.matchups = matchups
 
     def get_head_to_head(self):
@@ -278,6 +281,7 @@ class League:
         Returns:
             dict: A dictionary containing pool information.
         """
+        from .pool import Pool
         pools_list = Pool.create_pools(self)
         pools = {pool.pool_id: pool for pool in pools_list}
 
@@ -322,29 +326,3 @@ class League:
     def fetch_playoffs(self):
         return Leagues.get_winners_playoff_bracket(self.league_id)
 
-
-    def get_pools_by_league_id(self):
-        table_name = 'pools'
-        db_table = DynamoDBUtils.get_table(table_name)
-
-        # Define the parameters for the query
-        params = {
-            'TableName': table_name, 
-            'KeyConditionExpression': 'league_id = :id',
-            'ExpressionAttributeValues': {
-                ':id': {'S': self.league_id}  
-            }
-        }
-
-        # Execute the query
-        response = db_table.query(**params)
-
-        # Parse the response and extract the pools
-        pools = []
-        for item in response['Items']:
-            pool = {
-                'pool_id': item['pool_id']['S'],
-            }
-            pools.append(pool)
-
-        return pools

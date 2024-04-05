@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from models.payout import Payout
 
@@ -12,7 +12,7 @@ def get_payout_seasons():
 
 @payouts_bp.route("/api/v1/payouts/", defaults={'season': None})
 @payouts_bp.route("/api/v1/payouts/<int:season>")
-def retrieve_payouts_by_season(season=None):
+def get_payouts(season=None):
     query = Payout.query
     if season is not None:
         query = query.filter(Payout.season == season)
@@ -32,18 +32,27 @@ def retrieve_payouts_by_season(season=None):
 
     return jsonify(formatted_payouts)
 
-@payouts_bp.route("/api/v1/payouts/<int:season>/<string:username>")
-def retrieve_detailed_payouts(season, username):
-    detailed_payouts = Payout.query.filter_by(season=season, username=username).all()
+@payouts_bp.route("/api/v1/payoutdetails")
+def get_payout_details():
+    season = request.args.get('season')
+    username = request.args.get('username')
+    query = Payout.query
+
+    if season is not None:
+        query = query.filter_by(season=season)
+    if username is not None:
+        query = query.filter_by(username=username)
+
+    detailed_payouts = query.all()
     formatted_detailed_payouts = []
     for payout in detailed_payouts:
         formatted_payout = {
             'pool': payout.pool_id,
             'amount': payout.amount,
-            'week': payout.week,
+            'week': int(payout.week),
             'username': payout.username,
             'paid': payout.paid,
-            'season': payout.season
+            'season': int(payout.season)
         }
         formatted_detailed_payouts.append(formatted_payout)
     return jsonify(formatted_detailed_payouts)

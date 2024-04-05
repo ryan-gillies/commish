@@ -9,17 +9,17 @@ implementations for specific pool types such as weekly, seasonal, and special we
 
 from abc import ABC, ABCMeta, abstractmethod
 from decimal import Decimal
-import logging
+from sqlalchemy.orm import relationship
 import sys
+import logging
 
 from extensions import db
 from onepassword import OnePassword
 from venmo_api import Client
 
+from .league import League
 from .stats import *
 from .user import User
-from .payout import Payout
-
 
 class PoolMeta(type(db.Model), ABCMeta):
     pass
@@ -27,8 +27,9 @@ class PoolMeta(type(db.Model), ABCMeta):
 class Pool(ABC, db.Model, metaclass=PoolMeta):
     __tablename__ = 'pools'
 
+    
     pool_id = db.Column(db.String, primary_key = True)
-    league_id = db.Column(db.String, primary_key=True)
+    league_id = db.Column(db.String, db.ForeignKey('leagues.league_id'),primary_key=True)
     winner = db.Column(db.String, db.ForeignKey('users.username'))
     payout_amount = db.Column(db.Numeric)
     week = db.Column(db.Integer)
@@ -36,6 +37,15 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
     label = db.Column(db.String)
     pool_type = db.Column(db.String)
     pool_subtype = db.Column(db.String)
+
+      # Configure polymorphic mapping
+    __mapper_args__ = {
+        "polymorphic_on": league_id,
+        "polymorphic_identity": "pool",
+    }
+
+    league = relationship("League", backref="pools", lazy=True)
+    user = relationship("User", backref="pools")
 
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
@@ -113,6 +123,7 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         Returns:
             bool: True if the payout was successful, False otherwise.
         """
+        from .payout import Payout
         # Initialize Venmo client
         op = OnePassword()
         venmo_client = Client(
@@ -223,8 +234,6 @@ class SidePool(Pool, ABC):
             payout_pct (Decimal): The payout percentage.
             week (int): The week of the pool.
         """
-        from league import League
-
         super().__init__(pool_id, league, payout_pct, week)
 
     def set_payout_amount(self):
@@ -252,8 +261,6 @@ class MainPool(Pool, ABC):
             payout_pct (Decimal): The payout percentage.
             week (int): The week of the pool.
         """
-        from league import League
-
         super().__init__(pool_id, league, payout_pct, week)
 
     def set_payout_amount(self):
@@ -381,7 +388,7 @@ class WeeklyPool(SidePool, ABC):
         return pools
 
 
-class PropPool(SidePool):
+class PropPool(SidePool, ABC):
     """
     Subclass representing a Prop Pool object.
     """
@@ -758,3 +765,4 @@ class LeagueThirdPlace(MainPool):
             None,
         )
         return match.get("w")
+

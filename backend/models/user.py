@@ -9,7 +9,7 @@ import logging
 class Roster(db.Model):
     __tablename__ = 'rosters'
 
-    user_id = db.Column(db.String, db.ForeignKey('users.user_id'), primary_key=True)
+    username = db.Column(db.String, db.ForeignKey('users.username'), primary_key=True)
     league_id = db.Column(db.String, primary_key=True)
     roster_id = db.Column(db.String)
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router-dom';
 import PageTitle from '../components/Typography/PageTitle';
 import {
   Table,
@@ -8,7 +9,6 @@ import {
   TableRow,
   TableFooter,
   TableContainer,
-  Badge,
   Avatar,
   Button,
   Pagination,
@@ -20,14 +20,39 @@ import arrowDown from '@iconify/icons-heroicons-solid/arrow-down';
 
 
 
-function Tables() {
+function Payouts() {
   const [pageTable, setPageTable] = useState(1);
   const [dataTable, setDataTable] = useState([]);
   const [selectedSeason, setSelectedSeason] = useState('');
+  const [seasons, setSeasons] = useState([]);
+  const history = useHistory();
   const [totalResults, setTotalResults] = useState(0);
   const [sortBy, setSortBy] = useState('amount');
   const [sortDirection, setSortDirection] = useState('desc');
   const resultsPerPage = 12;
+
+
+  const handleViewPayouts = (selectedSeason, username) => {
+    const url = `/app/payoutdetails?season=${selectedSeason}&username=${username}`;
+    history.push(url);
+  };
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch(`/api/v1/payouts/seasons`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setSeasons(data);
+      } catch (error) {
+        console.error('Error fetching seasons:', error);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -92,8 +117,11 @@ function Tables() {
             onChange={(e) => setSelectedSeason(e.target.value)}
           >
             <option value="">All-Time</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
+            {seasons.map((season) => (
+              <option key={season} value={season}>
+                {season}
+              </option>
+            ))}
           </Select>
         </Label>
       </div>
@@ -146,12 +174,14 @@ function Tables() {
                     <Avatar className="hidden mr-3 md:block" src={user.avatar} alt="User avatar" />
                     <div>
                       <p className="font-semibold">{user.username}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{user.job}</p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <span className="text-sm">{formatAmount(user.amount)}</span>
+                </TableCell>
+                <TableCell>
+                  <Button onClick={() => handleViewPayouts(selectedSeason, user.username)}>View Payouts</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -173,4 +203,4 @@ function Tables() {
   );
 }
 
-export default Tables;
+export default Payouts;

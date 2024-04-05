@@ -5,7 +5,7 @@ const Dashboard = lazy(() => import('../pages/Dashboard'))
 const Forms = lazy(() => import('../pages/Forms'))
 const Leaderboards = lazy(() => import('../pages/Leaderboards'))
 const Charts = lazy(() => import('../pages/Charts'))
-const Buttons = lazy(() => import('../pages/Buttons'))
+const PayoutDetails = lazy(() => import('../pages/PayoutDetails'))
 const Modals = lazy(() => import('../pages/Modals'))
 const Payouts = lazy(() => import('../pages/Payouts'))
 const Page404 = lazy(() => import('../pages/404'))
@@ -38,8 +38,8 @@ const routes = [
     component: Charts,
   },
   {
-    path: '/buttons',
-    component: Buttons,
+    path: '/payoutdetails',
+    component: PayoutDetails,
   },
   {
     path: '/modals',
