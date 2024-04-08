@@ -57,35 +57,23 @@ class League(db.Model):
         self.config = self._load_config()
         self.sleeper_user_id = self.config["credentials"]["sleeper_user_id"]
         self.league_id = self._set_league_id()
-        league_data = self.query.filter_by(league_id=self.league_id).first()
         self.state = Leagues.get_state("nfl")
-        if league_data:
-            self._load_from_database(league_data)
-            self.optouts = self._get_optouts()
+        
+        existing_league = self.query.filter_by(league_id=self.league_id).first()
+        if existing_league:
+            attributes = list(existing_league.__dict__.keys())  # Create a copy of dictionary keys
+            for attr in attributes:
+                setattr(self, attr, getattr(existing_league, attr))
+            return self
         else:
             self.create_new_league()
             db.session.add(self)
             db.session.commit()
+        
         self.fetch_matchups()
         self.get_head_to_head()
         self.fetch_player_stats()
         self.fetch_team_stats()
-
-    def _load_from_database(self, league_data):
-        """
-        Load league data from the database.
-
-        Args:
-            league_data (League): League data fetched from the database.
-        """
-        self.season = league_data.season
-        self.week = league_data.week
-        self.main_buy_in = league_data.main_buy_in
-        self.side_buy_in = league_data.side_buy_in
-        self.team_count = league_data.team_count
-        self.side_pool_count = league_data.side_pool_count
-        self.main_pot = league_data.main_pot
-        self.side_pot = league_data.side_pot
 
 
     def create_new_league(self, season=None):

@@ -66,6 +66,15 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         self.pool_id = pool_id
         self.league = league
         self.league_id = league.league_id
+
+        # Check for existing pool before creating a new one
+        existing_pool = Pool.query.filter_by(
+            pool_id=self.pool_id, league_id=self.league_id
+        ).first()
+
+        if existing_pool:
+            return existing_pool
+            
         self.payout_pct = payout_pct
         self.payout_amount = self.set_payout_amount()
         self.week = week
@@ -222,12 +231,14 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
             Pool: An instance of the specified pool type.
         """
         pool_class = getattr(sys.modules[__name__], pool_name)
+        
         if pool_class.pool_subtype == "weekly":
             return pool_class.create_pools_for_weeks(league, payout_pct, **kwargs)
         elif pool_class.pool_type == "main":
             return pool_class(league=league, payout_pct=payout_pct)
         else:
             return pool_class(league=league, payout_pct=payout_pct, **kwargs)
+
 
 
 class SidePool(Pool, ABC):
