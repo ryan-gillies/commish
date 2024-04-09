@@ -1,5 +1,6 @@
 from typing import Dict
 import yaml
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import insert
 from sleeperpy import Leagues
@@ -9,9 +10,9 @@ import logging
 class Roster(db.Model):
     __tablename__ = 'rosters'
 
-    username = db.Column(db.String, db.ForeignKey('users.username'), primary_key=True)
-    league_id = db.Column(db.String, primary_key=True)
-    roster_id = db.Column(db.Integer)
+    username = Column(String, ForeignKey('users.username'), primary_key=True)
+    league_id = Column(String, primary_key=True)
+    roster_id = Column(Integer)
     
 
 class User(db.Model):
@@ -27,11 +28,11 @@ class User(db.Model):
 
     __tablename__ = "users"
 
-    username = db.Column(db.String, primary_key=True)
-    name = db.Column(db.String)
-    user_id = db.Column(db.String)
-    avatar = db.Column(db.String)
-    venmo_id = db.Column(db.String)   
+    username = Column(String, primary_key=True)
+    name = Column(String)
+    user_id = Column(String)
+    avatar = Column(String)
+    venmo_id = Column(String)   
 
     rosters = relationship("Roster", backref="user")
 
@@ -125,24 +126,24 @@ class User(db.Model):
             raise
 
     @classmethod
-    def get_user_by_roster_id(self, roster_id, league_id):
+    def get_user_by_roster_id(cls, roster_id, league_id):
         """
         Fetches a user object based on the specified league ID and roster ID.
 
         Args:
-            league_id (str): The league ID to search for.
             roster_id (str): The roster ID to search for.
+            league_id (str): The league ID to search for.
 
         Returns:
             User: The user object if found, otherwise None.
         """
 
-        query = self.query.join(
-            Roster, User.username == Roster.username
-        ).filter(
-            Roster.league_id == league_id,
-            Roster.roster_id == roster_id
-        ).first()
+        query = (
+            cls.query.join(Roster, cls.username == Roster.username)
+            .filter(Roster.league_id == league_id, Roster.roster_id == roster_id)
+            .first()
+        )
 
         return query
+
     

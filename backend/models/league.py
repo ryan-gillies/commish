@@ -12,11 +12,10 @@ Classes:
 
 from sleeperpy import Leagues, Players
 import yaml
-from decimal import Decimal
 import pandas as pd
-from sqlalchemy.orm import relationship
 from extensions import db
 from sqlalchemy import Column, String, Integer, Float, ARRAY
+
 
 class League(db.Model):
     """
@@ -61,10 +60,9 @@ class League(db.Model):
         
         existing_league = self.query.filter_by(league_id=self.league_id).first()
         if existing_league:
-            attributes = list(existing_league.__dict__.keys())  # Create a copy of dictionary keys
-            for attr in attributes:
-                setattr(self, attr, getattr(existing_league, attr))
-            return self
+            self.load_league()
+            self.__dict__ = existing_league.__dict__  # Update self with existing league data
+            self.pools = existing_league.pools  # Access pools directly
         else:
             self.create_new_league()
             db.session.add(self)
@@ -75,8 +73,7 @@ class League(db.Model):
         self.fetch_player_stats()
         self.fetch_team_stats()
 
-
-    def create_new_league(self, season=None):
+    def create_new_league(self):
         self.site = 'sleeper'
         self.main_buy_in = self.config["buy_ins"]["main_buy_in"]
         self.side_buy_in = self.config["buy_ins"]["side_buy_in"]
@@ -87,6 +84,23 @@ class League(db.Model):
         self.side_pot = self.side_buy_in * self.side_pool_count
         self.setup_pools()
 
+    def load_league(self):
+        """Fetches a league from the database with its associated pools.
+
+        Args:
+            session: A database session object.
+            league_id: The ID of the league to load.
+
+        Returns:
+            The League object populated with data and its pools.
+        """
+
+        league = db.session.query(League).filter_by(league_id=self.league_id).first()
+
+        if league:
+            league.pools = league.pools
+
+        return league
 
     def _load_config(self):
         """
@@ -315,4 +329,4 @@ class League(db.Model):
 
     def fetch_playoffs(self):
         self.playoffs = Leagues.get_winners_playoff_bracket(self.league_id)
-
+        

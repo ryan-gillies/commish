@@ -13,13 +13,11 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 db.init_app(app)
 with app.app_context():
     db.create_all()
-    league = League("2022")
-    league.fetch_playoffs()
-    users = sleeperpy.Leagues.get_users(league.league_id)
-    for user_data in users:
-        user = User(user_data, league.league_id)
-    pools = league.setup_pools()
-    for pool in pools.values():
+    league = League("2020")
+    # users = sleeperpy.Leagues.get_users(league.league_id)
+    # for user_data in users:
+    #     user = User(user_data, league.league_id)
+    for pool in league.pools:
         pool.set_winner()
 
 
