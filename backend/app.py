@@ -18,14 +18,10 @@ with app.app_context():
     # for user_data in users:
     #     user = User(user_data, league.league_id)
     for pool in league.pools:
-        if pool.pool_subtype == 'special_week':
-            split_pools = pool.split_pool()
-            for pool in split_pools:
-                pool.set_winner()
-                pool.paid = True
+        if pool.pool_subtype == 'prop':
+            pool.set_winner()
     db.session.commit()
     db.session.close()
-
 
 # Register Blueprints
 app.register_blueprint(payouts_bp)

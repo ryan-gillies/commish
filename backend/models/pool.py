@@ -93,7 +93,7 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         """
         winner = self.set_pool_winner()[0]["roster_id"]
 
-        if self.pool_type == 'side':
+        if self.pool_type == 'side' and self.pool_subtype != 'prop':
             self.winner_payload = self.set_pool_winner()
 
         user = User.get_user_by_roster_id(winner, self.league_id)
@@ -791,7 +791,7 @@ class LeagueWinner(MainPool):
 
     def set_pool_winner(self):
         """
-        Set the winner of the prop pool.
+        Set the winner of the pool.
         """
         league = self.league
         league.fetch_playoffs()
@@ -822,7 +822,7 @@ class LeagueRunnerUp(MainPool):
 
     def set_pool_winner(self):
         """
-        Set the winner of the prop pool.
+        Set the winner of the pool.
         """
         league = self.league
         league.fetch_playoffs()
@@ -853,7 +853,7 @@ class LeagueThirdPlace(MainPool):
 
     def set_pool_winner(self):
         """
-        Set the winner of the prop pool.
+        Set the winner of the pool.
         """
         league = self.league
         league.fetch_playoffs()
