@@ -67,7 +67,10 @@ class League(db.Model):
             self.create_new_league()
             db.session.add(self)
             db.session.commit()
-        
+            self.setup_pools()
+            self.fetch_stats()
+    
+    def fetch_stats(self):
         self.fetch_matchups()
         self.get_head_to_head()
         self.fetch_player_stats()
@@ -82,9 +85,8 @@ class League(db.Model):
         self.side_pool_count = self.team_count - len(self.optouts)
         self.main_pot = self.main_buy_in * self.team_count
         self.side_pot = self.side_buy_in * self.side_pool_count
-        self.setup_pools()
-
-    def load_league(self):
+        
+    def load_league(season):
         """Fetches a league from the database with its associated pools.
 
         Args:
@@ -95,11 +97,8 @@ class League(db.Model):
             The League object populated with data and its pools.
         """
 
-        league = db.session.query(League).filter_by(league_id=self.league_id).first()
-
-        if league:
-            league.pools = league.pools
-
+        league = db.session.query(League).filter_by(season=season).first()
+        league.fetch_stats()
         return league
 
     def _load_config(self):
@@ -288,6 +287,8 @@ class League(db.Model):
         from .pool import Pool
         pools_list = Pool.create_pools(self)
         pools = {pool.pool_id: pool for pool in pools_list}
+        db.session.add_all(pools_list)
+        db.session.commit()
 
         # # Validate the total payout amounts of side and main pools
         # side_payout_total = sum(

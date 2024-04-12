@@ -44,7 +44,6 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
     pool_subtype = Column(String)
     pool_class = Column(String)
 
-    # Configure polymorphic mapping
     __mapper_args__ = {
         "polymorphic_on": pool_class,
         "polymorphic_identity": "pool",
@@ -53,7 +52,7 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
     league = relationship("League", backref="pools")
     user = relationship("User", backref="pools")
 
-    def __init__(self, pool_id: str, league_id, payout_pct: Decimal, week: int):
+    def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
         Initialize a Pool object.
 
@@ -64,22 +63,12 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
             week (int): The week of the pool.
         """
         self.pool_id = pool_id
-        self.league_id = league_id
-
-        # Check for existing pool before creating a new one
-        existing_pool = self.query.filter_by(
-            pool_id=self.pool_id, league_id=self.league_id
-        ).first()
-        if existing_pool:
-            attributes = list(existing_pool.__dict__.keys())  # Create a copy of dictionary keys
-            for attr in attributes:
-                setattr(self, attr, getattr(existing_pool, attr))
-        else:    
-            self.payout_pct = payout_pct
-            self.payout_amount = self.set_payout_amount()
-            self.week = week
-            self.paid = False
-            self.label = pool_id.replace("_", " ").title()
+        self.league_id = league.league_id
+        self.payout_pct = payout_pct
+        self.payout_amount = self.set_payout_amount()
+        self.week = week
+        self.paid = False
+        self.label = pool_id.replace("_", " ").title()
 
     def __str__(self):
         """
@@ -120,8 +109,6 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
             db.session.commit()
         else:
             print(f"User with roster_id {self.winner} not found in league {self.league_id}")
-
-
 
 
     @abstractmethod
@@ -242,13 +229,12 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         """
         pool_class = getattr(sys.modules[__name__], pool_name)
         
-        if pool_class.pool_subtype == "weekly":
+        if getattr(pool_class, 'weekly', False):
             return pool_class.create_pools_for_weeks(league, payout_pct, **kwargs)
-        elif pool_class.pool_type == "main":
-            return pool_class(league=league, payout_pct=payout_pct)
+        elif getattr(pool_class, 'main_pool', False):
+            return pool_class(league=league, payout_pct=payout_pct, **{})
         else:
             return pool_class(league=league, payout_pct=payout_pct, **kwargs)
-
 
 
 class SidePool(Pool, ABC):
@@ -257,6 +243,7 @@ class SidePool(Pool, ABC):
     """
 
     __abstract__ = True
+    main_pool = False
 
     def __init__(self, league, pool_id: str, payout_pct: Decimal, week: int):
         """
@@ -275,7 +262,7 @@ class SidePool(Pool, ABC):
         """
         Set the payout amount for the side pool.
         """
-        side_pot = League.query(League).filter_by(league_id=self.league_id).first().side_pot
+        side_pot = League.query.filter_by(league_id=self.league_id).first().side_pot
         return round(self.payout_pct * side_pot, 2)
 
 
@@ -285,6 +272,7 @@ class MainPool(Pool, ABC):
     """
 
     __abstract__ = True
+    main_pool = True
 
     def __init__(self, league, pool_id: str, payout_pct: Decimal, week: int):
         """
@@ -303,9 +291,8 @@ class MainPool(Pool, ABC):
         """
         Set the payout amount for the main pool.
         """
-        main_pot = League.query(League).filter_by(league_id=self.league_id).first().main_pot
+        main_pot = League.query.filter_by(league_id=self.league_id).first().main_pot
         return round(self.payout_pct * main_pot, 2)
-    
 
 
 class SeasonPool(SidePool, ABC):
@@ -356,38 +343,20 @@ class SpecialWeekPool(SidePool, ABC):
         super().__init__(league, pool_id, payout_pct, week)
         self.pool_subtype = "special_week"
 
-    @classmethod
-    def create_pools_for_matchups(cls, league, payout_pct: Decimal, week):
-        """
-        Create Pool instances for each matchup.
-
-        Args:
-            league (League): The league object.
-            payout_pct (Decimal): The payout percentage.
-            week (int): The week of the pool.
-
-        Returns:
-            List: List of created Pool instances.
-        """
-        matchup_winners = MatchupStats.get_head_to_head_winners(league, week=week)
-        matchups = {match["matchup_id"] for match in matchup_winners}
+    def split_pool(self):
+        winners = MatchupStats.get_head_to_head_winners(self.league, week=self.week)
+        payout_amount = self.payout_amount / len(winners)
         pools = []
-        for matchup in matchups:
-            pool_instance = cls(league, f"{cls.pool_id}_{matchup}", payout_pct, week)
+        for winner in winners:
+            pool_instance = getattr(sys.modules[__name__], self.pool_class)(self.league, 0)
+            pool_instance.payout_amount = payout_amount
+            pool_instance.matchup_id = winner['matchup_id']
+            pool_instance.pool_id = self.pool_id+'_'+str(pool_instance.matchup_id)
             pools.append(pool_instance)
+            db.session.add(pool_instance)
+        db.session.delete(self)
+        db.session.commit()
         return pools
-
-    def set_payout_amount(self):
-        """
-        Set the payout amount for the side pool.
-        """
-        side_pot = League.query(League).filter_by(league_id=self.league_id).first().side_pot
-        return round(
-            (self.payout_pct * side_pot)
-            / (1 if not self.winner else self.winner),
-            2,
-        )
-
 
 class WeeklyPool(SidePool, ABC):
     """
@@ -395,6 +364,7 @@ class WeeklyPool(SidePool, ABC):
     """
 
     __abstract__ = True
+    weekly = True
 
     def __init__(self, league, pool_id: str, payout_pct: Decimal, week: int):
         """
@@ -407,6 +377,7 @@ class WeeklyPool(SidePool, ABC):
             week (int): The week of the pool.
         """
         super().__init__(league, pool_id, payout_pct, week)
+        self.subtype = 'weekly'
 
     @classmethod
     def create_pools_for_weeks(cls, league, payout_pct: Decimal):
@@ -438,8 +409,6 @@ class PropPool(SidePool):
         "polymorphic_identity": "PropPool",
     }
 
-    pool_subtype = "prop"
-
     def __init__(self, pool_id: str, league, payout_pct: Decimal):
         """
         Initialize a PropPool object.
@@ -456,6 +425,7 @@ class PropPool(SidePool):
             league.CHAMPIONSHIP_WEEK,
         )
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
+        self.pool_subtype = 'prop'
 
     def set_pool_winner(self):
         """
@@ -500,8 +470,7 @@ class HighestScoreOfWeekPool(WeeklyPool):
         """
         Set the winner of the pool based on the highest team score of the week.
         """
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_high_team_score(league, week=self.week)
+        return MatchupStats.get_high_team_score(self.league, week=self.week)
 
 
 class HighestScoringMarginOfWeekPool(WeeklyPool):
@@ -539,8 +508,7 @@ class HighestScoringMarginOfWeekPool(WeeklyPool):
         """
         Set the winner of the pool based on the highest scoring margin of the week.
         """
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_high_scoring_margin(league, week=self.week)
+        return MatchupStats.get_high_scoring_margin(self.league, week=self.week)
 
 
 class HighestScoringPlayerOfWeekPool(WeeklyPool):
@@ -578,8 +546,7 @@ class HighestScoringPlayerOfWeekPool(WeeklyPool):
         """
         Set the winner of the pool based on the highest scoring player of the week.
         """
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return PlayerStats.get_high_player_score(league, week=self.week)
+        return PlayerStats.get_high_player_score(self.league, week=self.week)
 
 
 class RegularSeasonFirstPlacePool(SeasonPool):
@@ -597,12 +564,10 @@ class RegularSeasonFirstPlacePool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return LeagueStats.get_regular_season_first_place(league)
+        return LeagueStats.get_regular_season_first_place(self.league)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return LeagueStats.get_regular_season_first_place(league, top_n=12)
+        return LeagueStats.get_regular_season_first_place(self.league, top_n=12)
 
 
 class RegularSeasonMostPointsPool(SeasonPool):
@@ -620,12 +585,10 @@ class RegularSeasonMostPointsPool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return LeagueStats.get_regular_season_most_points(league)
+        return LeagueStats.get_regular_season_most_points(self.league)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()        
-        return LeagueStats.get_regular_season_most_points(league, top_n=12)
+        return LeagueStats.get_regular_season_most_points(self.league, top_n=12)
 
 
 class RegularSeasonMostPointsAgainstPool(SeasonPool):
@@ -643,12 +606,10 @@ class RegularSeasonMostPointsAgainstPool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return LeagueStats.get_regular_season_most_points_against(league)
+        return LeagueStats.get_regular_season_most_points_against(self.league)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return LeagueStats.get_regular_season_most_points_against(league, top_n=12)
+        return LeagueStats.get_regular_season_most_points_against(self.league, top_n=12)
 
 
 class RegularSeasonHighestScoringPlayerPool(SeasonPool):
@@ -666,12 +627,10 @@ class RegularSeasonHighestScoringPlayerPool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return PlayerStats.get_regular_season_high_scoring_player(league)
+        return PlayerStats.get_regular_season_high_scoring_player(self.league)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return PlayerStats.get_regular_season_high_scoring_player(league, top_n=12)
+        return PlayerStats.get_regular_season_high_scoring_player(self.league, top_n=12)
 
 
 class OneWeekHighestScorePool(SeasonPool):
@@ -689,12 +648,10 @@ class OneWeekHighestScorePool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_high_team_score(league, week=None)
+        return MatchupStats.get_high_team_score(self.league, week=None)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_high_team_score(league, week=None, top_n=12)
+        return MatchupStats.get_high_team_score(self.league, week=None, top_n=12)
 
 
 class OneWeekHighestScoreAgainstPool(SeasonPool):
@@ -712,12 +669,10 @@ class OneWeekHighestScoreAgainstPool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_high_score_against(league, week=None)
+        return MatchupStats.get_high_score_against(self.league, week=None)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()        
-        return MatchupStats.get_high_score_against(league, week=None, top_n=12)
+        return MatchupStats.get_high_score_against(self.league, week=None, top_n=12)
 
 
 class OneWeekHighestScoringPlayerPool(SeasonPool):
@@ -735,12 +690,10 @@ class OneWeekHighestScoringPlayerPool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return PlayerStats.get_high_player_score(league, week=None)
+        return PlayerStats.get_high_player_score(self.league, week=None)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()        
-        return PlayerStats.get_high_player_score(league, week=None, top_n=12)
+        return PlayerStats.get_high_player_score(self.league, week=None, top_n=12)
 
 
 class OneWeekSmallestMarginPool(SeasonPool):
@@ -758,12 +711,10 @@ class OneWeekSmallestMarginPool(SeasonPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_small_scoring_margin(league, week=None)
+        return MatchupStats.get_small_scoring_margin(self.league, week=None)
 
     def get_leaderboard(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()        
-        return MatchupStats.get_small_scoring_margin(league, week=None, top_n=12)
+        return MatchupStats.get_small_scoring_margin(self.league, week=None, top_n=12)
 
 
 class OpeningWeekWinnersPool(SpecialWeekPool):
@@ -787,10 +738,7 @@ class OpeningWeekWinnersPool(SpecialWeekPool):
         Returns:
             List[int]: List of Matchup IDs.
         """
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_head_to_head_winners(league, week=self.week)
-
-
+        return MatchupStats.get_head_to_head_winners(self.league, week=self.week, matchup_id=self.matchup_id if hasattr(self, 'matchup_id') else None)
 class RivalryWeekWinnersPool(SpecialWeekPool):
     __mapper_args__ = {
         "polymorphic_identity": "RivalryWeekWinnersPool",
@@ -806,8 +754,8 @@ class RivalryWeekWinnersPool(SpecialWeekPool):
         self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
-        league = League.query(League).filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_head_to_head_winners(league, week=self.week)
+        return MatchupStats.get_head_to_head_winners(self.league, week=self.week, matchup_id=self.matchup_id if hasattr(self, 'matchup_id') else None)
+
 
 
 class LastWeekWinnersPool(SpecialWeekPool):
@@ -824,8 +772,7 @@ class LastWeekWinnersPool(SpecialWeekPool):
         )
 
     def set_pool_winner(self):
-        league = League.query.filter_by(league_id=self.league_id).first()
-        return MatchupStats.get_head_to_head_winners(league, week=self.week)
+        return MatchupStats.get_head_to_head_winners(self.league, week=self.week, matchup_id=self.matchup_id if hasattr(self, 'matchup_id') else None)
 
 
 class LeagueWinner(MainPool):
@@ -846,7 +793,7 @@ class LeagueWinner(MainPool):
         """
         Set the winner of the prop pool.
         """
-        league = db.session.query(League).filter_by(league_id=self.league_id).first()
+        league = self.league
         league.fetch_playoffs()
         match = next(
             (
@@ -872,13 +819,12 @@ class LeagueRunnerUp(MainPool):
             payout_pct,
             league.CHAMPIONSHIP_WEEK,
         )
-        self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
         """
         Set the winner of the prop pool.
         """
-        league = db.session.query(League).filter_by(league_id=self.league_id).first()
+        league = self.league
         league.fetch_playoffs()
         match = next(
             (
@@ -904,13 +850,12 @@ class LeagueThirdPlace(MainPool):
             payout_pct,
             league.CHAMPIONSHIP_WEEK,
         )
-        self.pool_class = self.__mapper_args__["polymorphic_identity"]
 
     def set_pool_winner(self):
         """
         Set the winner of the prop pool.
         """
-        league = db.session.query(League).filter_by(league_id=self.league_id).first()
+        league = self.league
         league.fetch_playoffs()
         match = next(
             (

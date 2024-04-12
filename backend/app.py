@@ -13,12 +13,18 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 db.init_app(app)
 with app.app_context():
     db.create_all()
-    league = League("2020")
+    league = League.load_league('2023')
     # users = sleeperpy.Leagues.get_users(league.league_id)
     # for user_data in users:
     #     user = User(user_data, league.league_id)
     for pool in league.pools:
-        pool.set_winner()
+        if pool.pool_subtype == 'special_week':
+            split_pools = pool.split_pool()
+            for pool in split_pools:
+                pool.set_winner()
+                pool.paid = True
+    db.session.commit()
+    db.session.close()
 
 
 # Register Blueprints

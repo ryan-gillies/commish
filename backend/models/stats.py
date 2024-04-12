@@ -20,7 +20,7 @@ class Stats(ABC):
     """
 
     @staticmethod
-    def filter_out_optouts(stats, league):
+    def filter_out_optouts(stats, league, key = 'roster_id'):
         """
         Filters out matchups with teams that have opted out.
 
@@ -31,7 +31,7 @@ class Stats(ABC):
         Returns:
             list of dict: A filtered list of matchups or stats without teams that have opted out.
         """
-        return [x for x in stats if x.get("roster_id") not in league.optouts]
+        return [x for x in stats if str(x.get(key)) not in league.optouts]
 
 
 class MatchupStats(Stats):
@@ -67,7 +67,7 @@ class MatchupStats(Stats):
                 match for match in league.head_to_head
             ]
 
-        eligible_margins = Stats.filter_out_optouts(head_to_head, league)
+        eligible_margins = Stats.filter_out_optouts(head_to_head, league, 'matchup_loser')
         sorted_margins = sorted(
             eligible_margins, key=lambda x: x["matchup_margin"], reverse=False
         )
@@ -77,7 +77,7 @@ class MatchupStats(Stats):
                 "matchup_id": match["matchup_id"],
                 "roster_id": match["matchup_loser"],
                 "matchup_margin": match["matchup_margin"],
-                "opponent": match["matchup_winner"],
+                "opponent_id": match["matchup_winner"],
             }
             for match in sorted_margins[:top_n]
         ]
@@ -103,7 +103,7 @@ class MatchupStats(Stats):
                 match for match in league.head_to_head
             ]
 
-        eligible_margins = Stats.filter_out_optouts(head_to_head, league)
+        eligible_margins = Stats.filter_out_optouts(head_to_head, league, 'matchup_winner')
         sorted_margins = sorted(
             eligible_margins, key=lambda x: x["matchup_margin"], reverse=True
         )
@@ -113,7 +113,7 @@ class MatchupStats(Stats):
                 "matchup_id": match["matchup_id"],
                 "roster_id": match["matchup_winner"],
                 "matchup_margin": match["matchup_margin"],
-                "opponent": match["matchup_loser"],
+                "opponent_id": match["matchup_loser"],
             }
             for match in sorted_margins[:top_n]
         ]
@@ -174,7 +174,7 @@ class MatchupStats(Stats):
         else:
             head_to_head = [match for match in league.head_to_head]
 
-        eligible_scores_against = Stats.filter_out_optouts(head_to_head, league)
+        eligible_scores_against = Stats.filter_out_optouts(head_to_head, league, 'matchup_loser')
         sorted_scores_against = sorted(
             eligible_scores_against, key=lambda x: x["winner_points"], reverse=True
         )
@@ -185,44 +185,70 @@ class MatchupStats(Stats):
                 "matchup_id": team["matchup_id"],
                 "roster_id": team["matchup_loser"],
                 "winner_points": team["winner_points"],
-                "opponent": team["matchup_winner"],
+                "opponent_id": team["matchup_winner"],
             }
             for team in top_teams
         ]
 
-    def get_head_to_head_winners(league, week=None):
+    def get_head_to_head_winners(league, week=None, matchup_id=None):
         """
         Gets the roster IDs of the matchup winners for the specified week or all weeks if week is None.
 
         Args:
             week (int): The week number to filter matchups. If None, all weeks are considered.
+            matchup_id (int): The matchup ID to filter matchups. If None, all matchups are considered.
 
         Returns:
             List[dict]: A list of dictionaries containing roster IDs of the matchup winners.
         """
 
-        filtered_head_to_head = Stats.filter_out_optouts(league.head_to_head, league)
         winners = []
-        if week is None:
+        if week is None and matchup_id is None:
             winners = [
                 {
                     "week": match["week"],
                     "matchup_id": match["matchup_id"],
-                    "matchup_winner": match["matchup_winner"],
+                    "roster_id": match["matchup_winner"],
+                    "opponent_id": match["matchup_loser"],
                 }
-                for match in filtered_head_to_head
+                for match in league.head_to_head
+            ]
+        elif week is not None and matchup_id is None:
+            winners = [
+                {
+                    "week": match["week"],
+                    "matchup_id": match["matchup_id"],
+                    "roster_id": match["matchup_winner"],
+                    "opponent_id": match["matchup_loser"],
+                }
+                for match in league.head_to_head
+                if match["week"] == week
+            ]
+        elif week is None and matchup_id is not None:
+            winners = [
+                {
+                    "week": match["week"],
+                    "matchup_id": match["matchup_id"],
+                    "roster_id": match["matchup_winner"],
+                    "opponent_id": match["matchup_loser"],
+                }
+                for match in league.head_to_head
+                if match["matchup_id"] == matchup_id
             ]
         else:
             winners = [
                 {
                     "week": match["week"],
                     "matchup_id": match["matchup_id"],
-                    "matchup_winner": match["matchup_winner"],
+                    "roster_id": match["matchup_winner"],
+                    "opponent_id": match["matchup_loser"],
                 }
-                for match in filtered_head_to_head
-                if match["week"] == week
+                for match in league.head_to_head
+                if match["week"] == week and match["matchup_id"] == matchup_id
             ]
-        return winners
+        winners_filtered = Stats.filter_out_optouts(winners, league)
+        return winners_filtered
+
 
 
 class PlayerStats(Stats):
@@ -261,8 +287,14 @@ class PlayerStats(Stats):
         """
         if week is None:
             eligible_player_scores = Stats.filter_out_optouts(
-                league.player_stats, league
+                [
+                    score
+                    for score in league.player_stats
+                    if score["week"] in league.REGULAR_SEASON
+                ],
+                league,
             )
+
         else:
             eligible_player_scores = Stats.filter_out_optouts(
                 [score for score in league.player_stats if score["week"] == week],
@@ -292,7 +324,7 @@ class PlayerStats(Stats):
             position = player["position"]
             player_name = player["player_name"]
 
-            if roster_id in league.optouts:
+            if not Stats.filter_out_optouts([player], league):
                 continue
 
             if player_id in player_totals:
@@ -365,11 +397,8 @@ class LeagueStats(Stats):
         Returns:
             list: A list of dictionaries containing information about the top rosters, including roster ID and total points for.
         """
-        eligible_rosters = [
-            team
-            for team in league.team_stats
-            if team.get("roster_id") not in league.optouts
-        ]
+
+        eligible_rosters = Stats.filter_out_optouts(league.team_stats, league)
         sorted_rosters = sorted(
             eligible_rosters, key=lambda x: x["total_points_for"], reverse=True
         )
@@ -386,11 +415,8 @@ class LeagueStats(Stats):
         Returns:
             list: A list of dictionaries containing information about the top rosters, including roster ID and total points against.
         """
-        eligible_rosters = [
-            team
-            for team in league.team_stats
-            if team.get("roster_id") not in league.optouts
-        ]
+        eligible_rosters = Stats.filter_out_optouts(league.team_stats, league)
+
         sorted_rosters = sorted(
             eligible_rosters, key=lambda x: x["total_points_against"], reverse=True
         )
