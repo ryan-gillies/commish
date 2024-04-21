@@ -10,14 +10,14 @@ const routes = [
     routes: [
       // submenu
       {
-        path: '/app/leaderboards',
-        icon: 'TablesIcon',
-        name: 'Leaderboards',
-      },
-      {
         path: '/app/payouts',
         icon: 'MoneyIcon',
         name: 'Payouts',
+      },
+      {
+        path: '/app/leaderboards',
+        icon: 'TablesIcon',
+        name: 'Leaderboards',
       },
     ],
   },

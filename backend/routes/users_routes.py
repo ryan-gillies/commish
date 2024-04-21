@@ -6,9 +6,10 @@ users_bp = Blueprint('users', __name__)
 
 @users_bp.route("/api/v1/users", methods=['GET'])
 def get_users():
-    users = User.query.all()
+    users = User.query.filter(User.name != None).all()  # Corrected filter syntax
     formatted_users = [user.to_dict() for user in users]
     return jsonify(formatted_users)
+
 
 @users_bp.route("/api/v1/users/<username>", methods=['GET'])
 def get_user(username):

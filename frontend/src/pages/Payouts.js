@@ -89,15 +89,8 @@ function PayoutDetails() {
 
         const data = await response.json();
 
-        const formattedData = data.map((payout) => {
-          return {
-            ...payout,
-            formatted_amount: formatAmount(payout.amount),
-          };
-        });
-
-        const usernames = [...new Set(formattedData.map((payout) => payout.username))];
-        const poolTypes = [...new Set(formattedData.map((payout) => payout.pool_type))];
+        const usernames = [...new Set(data.map((payout) => payout.name))];
+        const poolTypes = [...new Set(data.map((payout) => payout.pool_type))];
         const poolTypeColors = {
           'main': '#7e3af2',
           'side': '#0694a2',
@@ -107,19 +100,19 @@ function PayoutDetails() {
         const userPayouts = {};
 
         // Loop through each user and pool type to aggregate payouts
-        usernames.forEach(username => {
-          // Initialize an empty array to hold payouts for the current user
-          userPayouts[username] = [];
+        usernames.forEach(name => {
+          // Initialize an empty array to hofld payouts for the current user
+          userPayouts[name] = [];
 
           // Loop through each pool type to aggregate payouts for the current user
           poolTypes.sort();
           poolTypes.forEach(poolType => {
             // Filter payouts for the current user and pool type
-            const payoutsForUserAndType = formattedData.filter(payout => payout.username === username && payout.pool_type === poolType);
+            const payoutsForUserAndType = data.filter(payout => payout.name === name && payout.pool_type === poolType);
             // Sum up the payouts for the current user and pool type
             const totalPayoutForUserAndType = payoutsForUserAndType.reduce((sum, payout) => sum + payout.amount, 0);
             // Push the total payout for the current user and pool type to the array
-            userPayouts[username].push(totalPayoutForUserAndType);
+            userPayouts[name].push(totalPayoutForUserAndType);
           });
         });
 
@@ -303,7 +296,7 @@ function PayoutDetails() {
             <option value="">All Users</option>
             {users.map((user) => (
               <option key={user.username} value={user.username}>
-                {user.username}
+                {user.name}
               </option>
             ))}
           </Select>
@@ -408,7 +401,7 @@ function PayoutDetails() {
                 <TableCell>
                   <div className="flex items-center text-sm">
                     <div>
-                      <p className="font-medium">{payout.username}</p>
+                      <p className="font-medium">{payout.name}</p>
                     </div>
                   </div>
                 </TableCell>
