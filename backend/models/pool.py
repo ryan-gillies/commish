@@ -87,6 +87,21 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         )
         return attr_string
 
+    def to_dict(self):
+        return {
+            "pool_id": self.pool_id,
+            "league_id": self.league_id,
+            "winner": self.winner,
+            "winner_payload": self.winner_payload,
+            "payout_amount": self.payout_amount,
+            "week": self.week,
+            "paid": self.paid,
+            "label": self.label,
+            "pool_type": self.pool_type,
+            "pool_subtype": self.pool_subtype,
+            "pool_class": self.pool_class,
+        }
+
     def set_winner(self):
         """
         Set the winner of the pool.
@@ -158,22 +173,10 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
                     target_user_id=self.winner_user.get_venmo_id(),
                 )
                 logging.info(f"Payment sent to {self.winner} via Venmo: {payment_info}")
-            # Create payout item in the database
-            payout = Payout(
-                pool_id=self.pool_id,
-                amount=self.payout_amount,
-                week=self.week,
-                venmo_id=self.winner_user.get_venmo_id(),
-                paid=True,  # Mark as paid since payment was successful
-                season=League.query.filter_by(league_id=self.league_id).first().season
-,
-            )
-            try:
-                payout.save_to_database()
-                logging.info("Payout item created in the database.")
+                self.paid = True
+                db.session.commit()
                 return True
-            except Exception as e:
-                logging.error(f"Failed to create payout item in the database: {e}")
+            else:
                 return False
         except Exception as e:
             logging.error(f"Failed to send payment to {self.winner} via Venmo: {e}")
@@ -357,6 +360,7 @@ class SpecialWeekPool(SidePool, ABC):
         db.session.delete(self)
         db.session.commit()
         return pools
+
 
 class WeeklyPool(SidePool, ABC):
     """
@@ -567,7 +571,13 @@ class RegularSeasonFirstPlacePool(SeasonPool):
         return LeagueStats.get_regular_season_first_place(self.league)
 
     def get_leaderboard(self):
-        return LeagueStats.get_regular_season_first_place(self.league, top_n=12)
+        league = self.league
+        league.fetch_team_stats()
+        leaderboard = LeagueStats.get_regular_season_first_place(league, top_n=12)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(int(entry["roster_id"]), self.league_id)
+            entry["username"] = user.username
+        return leaderboard
 
 
 class RegularSeasonMostPointsPool(SeasonPool):
@@ -588,8 +598,13 @@ class RegularSeasonMostPointsPool(SeasonPool):
         return LeagueStats.get_regular_season_most_points(self.league)
 
     def get_leaderboard(self):
-        return LeagueStats.get_regular_season_most_points(self.league, top_n=12)
-
+        league = self.league
+        league.fetch_team_stats()
+        leaderboard = LeagueStats.get_regular_season_most_points(league, top_n=12)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(int(entry["roster_id"]), self.league_id)
+            entry["username"] = user.username
+        return leaderboard
 
 class RegularSeasonMostPointsAgainstPool(SeasonPool):
     __mapper_args__ = {
@@ -609,7 +624,13 @@ class RegularSeasonMostPointsAgainstPool(SeasonPool):
         return LeagueStats.get_regular_season_most_points_against(self.league)
 
     def get_leaderboard(self):
-        return LeagueStats.get_regular_season_most_points_against(self.league, top_n=12)
+        league = self.league
+        league.fetch_team_stats()
+        leaderboard = LeagueStats.get_regular_season_most_points_against(league, top_n=12)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(int(entry["roster_id"]), self.league_id)
+            entry["username"] = user.username
+        return leaderboard
 
 
 class RegularSeasonHighestScoringPlayerPool(SeasonPool):
@@ -630,7 +651,14 @@ class RegularSeasonHighestScoringPlayerPool(SeasonPool):
         return PlayerStats.get_regular_season_high_scoring_player(self.league)
 
     def get_leaderboard(self):
-        return PlayerStats.get_regular_season_high_scoring_player(self.league, top_n=12)
+        league = self.league
+        league.fetch_matchups()
+        league.fetch_player_stats()
+        leaderboard = PlayerStats.get_regular_season_high_scoring_player(league, top_n=12)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(int(entry["roster_id"]), self.league_id)
+            entry["username"] = user.username
+        return leaderboard
 
 
 class OneWeekHighestScorePool(SeasonPool):
@@ -651,8 +679,13 @@ class OneWeekHighestScorePool(SeasonPool):
         return MatchupStats.get_high_team_score(self.league, week=None)
 
     def get_leaderboard(self):
-        return MatchupStats.get_high_team_score(self.league, week=None, top_n=12)
-
+        league = self.league
+        league.fetch_matchups()
+        leaderboard = MatchupStats.get_high_team_score(league, week=None, top_n=5)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(int(entry["roster_id"]), self.league_id)
+            entry["username"] = user.username
+        return leaderboard
 
 class OneWeekHighestScoreAgainstPool(SeasonPool):
     __mapper_args__ = {
@@ -672,8 +705,16 @@ class OneWeekHighestScoreAgainstPool(SeasonPool):
         return MatchupStats.get_high_score_against(self.league, week=None)
 
     def get_leaderboard(self):
-        return MatchupStats.get_high_score_against(self.league, week=None, top_n=12)
-
+        league = self.league
+        league.fetch_matchups()
+        league.get_head_to_head()
+        leaderboard = MatchupStats.get_high_score_against(self.league, week=None, top_n=5)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(entry["roster_id"], self.league_id)
+            opponent = User.get_user_by_roster_id((entry["opponent_id"]), self.league_id)
+            entry["username"] = user.username
+            entry["opponent"] = opponent.username
+        return leaderboard
 
 class OneWeekHighestScoringPlayerPool(SeasonPool):
     __mapper_args__ = {
@@ -693,7 +734,14 @@ class OneWeekHighestScoringPlayerPool(SeasonPool):
         return PlayerStats.get_high_player_score(self.league, week=None)
 
     def get_leaderboard(self):
-        return PlayerStats.get_high_player_score(self.league, week=None, top_n=12)
+        league = self.league
+        league.fetch_matchups()
+        league.fetch_player_stats()
+        leaderboard = PlayerStats.get_high_player_score(self.league, week=None, top_n=5)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(entry["roster_id"], self.league_id)
+            entry["username"] = user.username
+        return leaderboard
 
 
 class OneWeekSmallestMarginPool(SeasonPool):
@@ -714,7 +762,17 @@ class OneWeekSmallestMarginPool(SeasonPool):
         return MatchupStats.get_small_scoring_margin(self.league, week=None)
 
     def get_leaderboard(self):
-        return MatchupStats.get_small_scoring_margin(self.league, week=None, top_n=12)
+        league = self.league
+        league.fetch_matchups()
+        league.get_head_to_head()
+        leaderboard = MatchupStats.get_small_scoring_margin(self.league, week=None, top_n=5)
+        for entry in leaderboard:
+            user = User.get_user_by_roster_id(entry["roster_id"], self.league_id)
+            opponent = User.get_user_by_roster_id((entry["opponent_id"]), self.league_id)
+            entry["username"] = user.username
+            entry["opponent"] = opponent.username
+        return leaderboard
+        
 
 
 class OpeningWeekWinnersPool(SpecialWeekPool):

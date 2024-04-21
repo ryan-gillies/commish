@@ -76,7 +76,7 @@ class MatchupStats(Stats):
                 "week": match["week"],
                 "matchup_id": match["matchup_id"],
                 "roster_id": match["matchup_loser"],
-                "matchup_margin": match["matchup_margin"],
+                "score": match["matchup_margin"],
                 "opponent_id": match["matchup_winner"],
             }
             for match in sorted_margins[:top_n]
@@ -112,7 +112,7 @@ class MatchupStats(Stats):
                 "week": match["week"],
                 "matchup_id": match["matchup_id"],
                 "roster_id": match["matchup_winner"],
-                "matchup_margin": match["matchup_margin"],
+                "score": match["matchup_margin"],
                 "opponent_id": match["matchup_loser"],
             }
             for match in sorted_margins[:top_n]
@@ -152,7 +152,8 @@ class MatchupStats(Stats):
                 "week": team["week"],
                 "matchup_id": team["matchup_id"],
                 "roster_id": team["roster_id"],
-                "points": team["points"],
+                "score": team["points"],
+                "opponent_id": '',
             }
             for team in top_teams
         ]
@@ -184,7 +185,7 @@ class MatchupStats(Stats):
                 "week": team["week"],
                 "matchup_id": team["matchup_id"],
                 "roster_id": team["matchup_loser"],
-                "winner_points": team["winner_points"],
+                "score": team["winner_points"],
                 "opponent_id": team["matchup_winner"],
             }
             for team in top_teams
@@ -344,7 +345,7 @@ class PlayerStats(Stats):
         for player_id in sorted_player_ids[:top_n]:
             top_player_info = {
                 "player_id": player_id,
-                "total_score": player_totals[player_id],
+                "score": player_totals[player_id],
                 "roster_id": player_info[player_id]["roster_id"],
                 "position": player_info[player_id]["position"],
                 "player_name": player_info[player_id]["player_name"],
@@ -403,7 +404,7 @@ class LeagueStats(Stats):
             eligible_rosters, key=lambda x: x["total_points_for"], reverse=True
         )
         top_teams = sorted_rosters[:top_n]
-        return [team for team in top_teams]
+        return [{"roster_id": team["roster_id"], "score": team["total_points_for"]} for team in top_teams]
 
     def get_regular_season_most_points_against(league, top_n=1):
         """
@@ -421,4 +422,4 @@ class LeagueStats(Stats):
             eligible_rosters, key=lambda x: x["total_points_against"], reverse=True
         )
         top_teams = sorted_rosters[:top_n]
-        return [team for team in top_teams]
+        return [{"roster_id": team["roster_id"], "score": team["total_points_against"]} for team in top_teams]

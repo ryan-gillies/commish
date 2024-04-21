@@ -13,6 +13,13 @@ class Roster(db.Model):
     username = Column(String, ForeignKey('users.username'), primary_key=True)
     league_id = Column(String, primary_key=True)
     roster_id = Column(Integer)
+
+    def to_dict(self):
+        return {
+            "username": self.username,
+            "league_id": self.league_id,
+            "roster_id": self.roster_id,
+        }
     
 
 class User(db.Model):
@@ -62,6 +69,16 @@ class User(db.Model):
             str: A string representation of the user.
         """
         return f"User(user_id={self.user_id}, username={self.username}, current_roster_id = {self.roster_id}, avatar={self.avatar}, venmo_id={self.venmo_id})"
+
+    def to_dict(self):
+        return {
+            "user_id": self.user_id,
+            "username": self.username,
+            "name": self.name,
+            "avatar": self.avatar,
+            "venmo_id": self.venmo_id,
+            "rosters": [roster.to_dict() for roster in self.rosters],
+        }
 
     def set_roster(self, league_id):
         """

@@ -69,7 +69,24 @@ class League(db.Model):
             db.session.commit()
             self.setup_pools()
             self.fetch_stats()
-    
+
+    def to_dict(self):
+        return {
+            "season": self.season,
+            "week": self.week,
+            "league_id": self.league_id,
+            "main_buy_in": self.main_buy_in,
+            "side_buy_in": self.side_buy_in,
+            "team_count": self.team_count,
+            "side_pool_count": self.side_pool_count,
+            "main_pot": self.main_pot,
+            "side_pot": self.side_pot,
+            "site": self.site,
+            "optouts": self.optouts,
+        }
+
+
+
     def fetch_stats(self):
         self.fetch_matchups()
         self.get_head_to_head()

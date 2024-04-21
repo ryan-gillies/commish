@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import routes from '../../routes/sidebar';
 import { NavLink, Route } from 'react-router-dom';
 import * as Icons from '../../icons';
@@ -9,11 +9,30 @@ function Icon({ icon, ...props }) {
   return <IconComponent {...props} />;
 }
 
+
 function SidebarContent() {
+  const [leagueName, setLeagueName] = useState('');
+  const [season, setSeason] = useState('');
+  
+  useEffect(() => {
+    const leagueId = '978439391255322624'
+    const fetchLeagueData = async () => {
+      const response = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);
+      if (!response.ok) {
+        console.error(`Error fetching league data: ${response.statusText}`);
+        return;
+      }
+      const data = await response.json();
+      setLeagueName(data.name);
+      setSeason(data.season);
+    };
+    fetchLeagueData();
+  }, []);
+
   return (
     <div className="py-4 text-gray-500 dark:text-gray-400">
       <a className="ml-6 text-lg font-bold text-gray-800 dark:text-gray-200" href="#">
-        Side Judge
+        {leagueName} ({season})
       </a>
       <ul className="mt-6">
         {routes.map((route) =>

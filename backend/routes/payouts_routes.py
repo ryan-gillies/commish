@@ -1,58 +1,58 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
-from models.payout import Payout
+from models.pool import Pool
+from models.league import League
 
 payouts_bp = Blueprint('payouts', __name__)
-
-@payouts_bp.route("/api/v1/payouts/seasons")
-def get_payout_seasons():
-    payout_seasons = Payout.query.with_entities(Payout.season).distinct().all()
-    formatted_payout_seasons = [season[0] for season in payout_seasons]
-    return jsonify(formatted_payout_seasons)
 
 @payouts_bp.route("/api/v1/payouts/", defaults={'season': None})
 @payouts_bp.route("/api/v1/payouts/<int:season>")
 def get_payouts(season=None):
-    query = Payout.query
     if season is not None:
-        query = query.filter(Payout.season == season)
+        query = Pool.query.join(League, Pool.league_id == League.league_id).filter(League.season == season and Pool.paid == True)
+    else:
+        query = Pool.query.filter(Pool.paid == True)
 
-    payouts = query.group_by(Payout.username).with_entities(
-        Payout.username,
-        func.sum(Payout.amount).label('amount')
+    payouts = query.group_by(Pool.winner, Pool.pool_type).with_entities(
+        Pool.winner,
+        Pool.pool_type,
+        func.sum(Pool.payout_amount).label('amount')
     ).all()
 
     formatted_payouts = []
-    for username, amount in payouts:
+    for winner, pool_type, amount in payouts:
         formatted_payout = {
-            'username': username,
-            'amount': amount
+            'username': winner,
+            'amount': float(amount),
+            'pool_type': pool_type
         }
         formatted_payouts.append(formatted_payout)
 
     return jsonify(formatted_payouts)
 
+
 @payouts_bp.route("/api/v1/payoutdetails")
-def get_payout_details():
+def get_payout_details(season=None):
     season = request.args.get('season')
     username = request.args.get('username')
-    query = Payout.query
 
+    query = Pool.query.join(League, Pool.league_id == League.league_id).filter(Pool.paid == True)
     if season is not None:
-        query = query.filter_by(season=season)
+        query = query.filter(League.season == season)
     if username is not None:
-        query = query.filter_by(username=username)
+        query = query.filter(Pool.winner == username)
 
     detailed_payouts = query.all()
     formatted_detailed_payouts = []
     for payout in detailed_payouts:
         formatted_payout = {
-            'pool': payout.pool_id,
-            'amount': payout.amount,
+            'pool': payout.label,
+            'amount': float(payout.payout_amount),
             'week': int(payout.week),
-            'username': payout.username,
+            'username': payout.winner,
             'paid': payout.paid,
-            'season': int(payout.season)
+            'season': payout.league.season
         }
         formatted_detailed_payouts.append(formatted_payout)
+    formatted_detailed_payouts.sort(key=lambda x: (x['season'], x['week']), reverse=True)
     return jsonify(formatted_detailed_payouts)
