@@ -103,19 +103,21 @@ class League(db.Model):
         self.main_pot = self.main_buy_in * self.team_count
         self.side_pot = self.side_buy_in * self.side_pool_count
         
-    def load_league(season):
+    def load_league(self):
         """Fetches a league from the database with its associated pools.
 
         Args:
             session: A database session object.
             league_id: The ID of the league to load.
+            season: The season to load the league for.
 
         Returns:
             The League object populated with data and its pools.
         """
 
-        league = db.session.query(League).filter_by(season=season).first()
-        league.fetch_stats()
+        league = League.query.filter_by(season=self.season).first()
+        if league:
+            league.fetch_stats()
         return league
 
     def _load_config(self):

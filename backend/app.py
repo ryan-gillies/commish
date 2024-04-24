@@ -14,6 +14,11 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 )
 db.init_app(app)
 
+# Create Tables
+with app.app_context():
+    db.create_all()
+    league = League(2023)
+
 # Register Blueprints
 app.register_blueprint(payouts_bp)
 app.register_blueprint(pools_bp)
