@@ -1,1 +1,1 @@
-web: npm start wsgi:app
+web: gunicorn wsgi:app
