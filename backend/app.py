@@ -7,11 +7,14 @@ from routes.users_routes import users_bp
 from models.league import League
 from models.user import User
 import sleeperpy
+from dotenv import load_dotenv, find_dotenv
+import os
+
+load_dotenv()
+postgresql = os.environ.get("postgresql")
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = (
-    "postgresql://retool:ZHVhmOA2Tb4i@ep-icy-salad-54868721.us-west-2.retooldb.com/retool?sslmode=require"
-)
+app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
 db.init_app(app)
 
 # Create Tables
