@@ -13,7 +13,6 @@ function App() {
         <Switch>
           <Route path="/app" component={Layout} />
           {/* If you have an index page, you can remothis Redirect */}
-          <Redirect exact from="/" to="/app" />
         </Switch>
       </Router>
     </>
