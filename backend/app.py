@@ -15,6 +15,11 @@ postgresql = os.environ.get("postgresql")
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
+
+@app.route("/")
+def index():
+    return None
+
 db.init_app(app)
 
 # Create Tables
@@ -28,6 +33,3 @@ app.register_blueprint(pools_bp)
 app.register_blueprint(leagues_bp)
 app.register_blueprint(users_bp)
 
-@app.route("/")
-def index():
-    return app.send_static_file("index.html")
