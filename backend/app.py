@@ -1,5 +1,5 @@
-from flask import Flask, render_template
-from dotenv import load_dotenv, find_dotenv
+from flask import Flask, redirect
+from dotenv import load_dotenv
 import os
 from .extensions import db
 from .routes.payouts_routes import payouts_bp
@@ -13,7 +13,7 @@ from .models.user import User
 load_dotenv()
 postgresql = os.environ.get("postgresql")
 
-app = Flask(__name__, static_folder='../dist', static_url_path='/')
+app = Flask(__name__, static_folder='../build', static_url_path='/')
 app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
 
 db.init_app(app)
@@ -31,4 +31,5 @@ app.register_blueprint(users_bp)
 
 @app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    return redirect('/app')
+
