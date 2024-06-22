@@ -15,7 +15,7 @@ def get_pools():
     season = request.args.get('season')
     username = request.args.get('username')
     
-    from models.league import League
+    from ..models.league import League
     if season is not None:
         pools = Pool.query.join(League, Pool.league_id == League.league_id).filter(League.season == season).all()
     else:
