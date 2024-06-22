@@ -28,5 +28,6 @@ app.register_blueprint(pools_bp)
 app.register_blueprint(leagues_bp)
 app.register_blueprint(users_bp)
 
-# if __name__ == "__main__":
-#     app.run(debug=True)
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
