@@ -18,7 +18,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
 
 @app.route("/")
 def index():
-    return render_template("./build/index.html")
+    return render_template("index.html")
 
 db.init_app(app)
 
