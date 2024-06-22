@@ -1,2 +1,2 @@
-# side_judge
+# commish
 Companion app for Sleeper Fantasy Football App

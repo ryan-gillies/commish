@@ -1,5 +1,5 @@
 {
-  "name": "side-judge",
+  "name": "commish",
   "version": "0.1.0",
   "proxy": "http://localhost:5000",
   "description": "A companion app for Sleeper Fantasy Football app, providing management of league pools.",
