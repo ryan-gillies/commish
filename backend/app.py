@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from dotenv import load_dotenv, find_dotenv
 import os
 from .extensions import db
@@ -18,7 +18,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
 
 @app.route("/")
 def index():
-    return None
+    return render_template("./build/index.html")
 
 db.init_app(app)
 
