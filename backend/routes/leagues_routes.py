@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
-from models.pool import Pool
-from models.league import League
+from ..models.pool import Pool
+from ..models.league import League
 
 leagues_bp = Blueprint('leagues', __name__)
 

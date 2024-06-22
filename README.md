@@ -54,16 +54,6 @@ Item that are used as dropdowns, like the Pages option, don't need a `path`, but
 {
   icon: 'PagesIcon', // <-- this is used as a submenu, so no path
   name: 'Pages',
-  routes: [
-    // submenu
-    {
-      path: '/login',
-      name: 'Login', // <-- these don't have icons
-    },
-    {
-      path: '/create-account',
-      name: 'Create account',
-    },
 ```
 
 #### General (Router) routes

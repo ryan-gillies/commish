@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
-from models.pool import Pool
+from ..models.pool import Pool
 
 pools_bp = Blueprint('pools', __name__)
 

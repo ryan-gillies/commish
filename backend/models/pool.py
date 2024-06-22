@@ -22,9 +22,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, join
 import sys
 import logging
-
-from extensions import db
 from venmo_api import Client
+
+from ..extensions import db
 
 from .league import League
 from .stats import *

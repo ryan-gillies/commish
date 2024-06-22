@@ -13,8 +13,8 @@ Classes:
 from sleeperpy import Leagues, Players
 import yaml
 import pandas as pd
-from extensions import db
 from sqlalchemy import Column, String, Integer, Float, ARRAY
+from ..extensions import db
 
 
 class League(db.Model):

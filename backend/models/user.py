@@ -4,8 +4,8 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import insert
 from sleeperpy import Leagues
-from extensions import db
 import logging
+from ..extensions import db
 
 class Roster(db.Model):
     __tablename__ = 'rosters'

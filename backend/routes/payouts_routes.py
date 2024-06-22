@@ -1,8 +1,8 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
-from models.pool import Pool
-from models.league import League
-from models.user import User
+from ..models.pool import Pool
+from ..models.league import League
+from ..models.user import User
 
 payouts_bp = Blueprint('payouts', __name__)
 
