@@ -12,7 +12,8 @@ function App() {
         <AccessibleNavigationAnnouncer />
         <Switch>
           <Route path="/" component={Layout} />
-          <Redirect from="/" to="/app" />
+          <Redirect from="" to="/app/dashboard" />
+          <Redirect from="/" to="/app/dashboard" />
           {/* If you have an index page, you can remothis Redirect */}
         </Switch>
       </Router>

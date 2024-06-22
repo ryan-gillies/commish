@@ -31,5 +31,5 @@ app.register_blueprint(users_bp)
 
 @app.route('/')
 def index():
-    return redirect('/app')
+    return redirect('/app/dashboard')
 

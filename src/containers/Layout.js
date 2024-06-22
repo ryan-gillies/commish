@@ -40,6 +40,7 @@ function Layout() {
                 ) : null
               })}
               <Redirect exact from="/" to="/app" />
+              <Redirect exact from="" to="/app" />
               <Route component={Page404} />
             </Switch>
           </Suspense>
