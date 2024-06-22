@@ -13,7 +13,7 @@ from .models.user import User
 load_dotenv()
 postgresql = os.environ.get("postgresql")
 
-app = Flask(__name__, static_folder='../build', static_url_path='/')
+app = Flask(__name__, static_folder='../dist', static_url_path='/')
 app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
 
 db.init_app(app)
