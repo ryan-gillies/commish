@@ -1,6 +1,5 @@
 from flask import Flask
 from flask.helpers import send_from_directory
-from flask_cors import CORS, cross_origin
 from dotenv import load_dotenv
 import os
 from .extensions import db
@@ -9,15 +8,12 @@ from .routes.pools_routes import pools_bp
 from .routes.leagues_routes import leagues_bp
 from .routes.users_routes import users_bp
 from .models.league import League
-from .models.user import User
-
 
 load_dotenv()
 postgresql = os.environ.get("postgresql")
 
-app = Flask(__name__, static_folder='./backend/build', static_url_path='/')
+app = Flask(__name__, static_folder='build/', static_url_path='/')
 app.config["SQLALCHEMY_DATABASE_URI"] = (postgresql)
-CORS(app)
 
 db.init_app(app)
 
@@ -33,7 +29,6 @@ app.register_blueprint(leagues_bp)
 app.register_blueprint(users_bp)
 
 @app.route('/')
-@cross_origin()
 def serve():
     return send_from_directory(app.static_folder, 'index.html')
 
