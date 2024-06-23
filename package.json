@@ -1,7 +1,7 @@
 {
   "name": "commish",
   "version": "0.1.0",
-  "proxy": "http://0.0.0.0:5006/",
+  "proxy": "https://commish-90fc70c94464.herokuapp.com/",
   "description": "A companion app for Sleeper Fantasy Football app, providing management of league pools.",
   "private": true,
   "scripts": {
