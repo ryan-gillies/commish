@@ -11,6 +11,8 @@ configparser==5.3.0
 espn-api==0.34.2
 et-xmlfile==1.1.0
 Flask==3.0.2
+Flask-CORS
+flask.helpers
 Flask-Migrate==4.0.7
 Flask-SQLAlchemy==3.1.1
 fleaflicker==1.0.0
