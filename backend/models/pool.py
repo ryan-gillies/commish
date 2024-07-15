@@ -7,7 +7,7 @@ It includes abstract base classes for different types of pools and concrete
 implementations for specific pool types such as weekly, seasonal, and special week pools.
 """
 
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
 from decimal import Decimal
 from sqlalchemy import (
     update,
@@ -24,19 +24,23 @@ import sys
 import logging
 from venmo_api import Client
 
-from ..extensions import db
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta, declared_attr
+
+from ..database import db
 
 from .league import League
 from .stats import *
-from .user import User, Roster
+from .user import User
 
-
-class PoolMeta(type(db.Model), ABCMeta):
+class PoolMetaclass(DeclarativeMeta, ABCMeta):
     pass
 
+Base = declarative_base(metaclass=PoolMetaclass)
 
-class Pool(ABC, db.Model, metaclass=PoolMeta):
+class Pool(Base, ABC):
     __tablename__ = "pools"
+    __table_args__ = {"extend_existing": True}
+    __abstract__ = True
 
     pool_id = Column(String, primary_key=True)
     league_id = Column(String, ForeignKey("leagues.league_id"), primary_key=True)
@@ -55,8 +59,13 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         "polymorphic_identity": "pool",
     }
 
-    league = relationship("League", backref="pools")
-    user = relationship("User", backref="pools")
+    @declared_attr
+    def league(cls):
+        return relationship("League", backref="pools")
+
+    @declared_attr
+    def user(cls):
+        user = relationship("User", backref="pools")
 
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
@@ -75,6 +84,9 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
         self.week = week
         self.paid = False
         self.label = pool_id.replace("_", " ").title()
+        
+        if db:
+            self.db = db
 
     def __str__(self):
         """
@@ -246,7 +258,7 @@ class Pool(ABC, db.Model, metaclass=PoolMeta):
             return pool_class(league=league, payout_pct=payout_pct, **kwargs)
 
 
-class SidePool(Pool, ABC):
+class SidePool(Pool):
     """
     Subclass representing a Side Pool object.
     """
@@ -275,7 +287,7 @@ class SidePool(Pool, ABC):
         return round(self.payout_pct * side_pot, 2)
 
 
-class MainPool(Pool, ABC):
+class MainPool(Pool):
     """
     Subclass representing a Main Pool object.
     """
@@ -304,7 +316,7 @@ class MainPool(Pool, ABC):
         return round(self.payout_pct * main_pot, 2)
 
 
-class SeasonPool(SidePool, ABC):
+class SeasonPool(SidePool):
     """
     Subclass representing a Season Pool object.
     """
@@ -332,7 +344,7 @@ class SeasonPool(SidePool, ABC):
         pass
 
 
-class SpecialWeekPool(SidePool, ABC):
+class SpecialWeekPool(SidePool):
     """
     Subclass representing a Special Week Pool object.
     """
@@ -370,7 +382,7 @@ class SpecialWeekPool(SidePool, ABC):
         return pools
 
 
-class WeeklyPool(SidePool, ABC):
+class WeeklyPool(SidePool):
     """
     Subclass representing a Weekly Pool object.
     """

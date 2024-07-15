@@ -1,10 +1,5 @@
-import boto3
-from decimal import Decimal
 import pandas as pd
 import sqlalchemy
-from botocore.exceptions import ClientError
-from boto3.dynamodb.conditions import Key
-from sleeper_wrapper import League
 from .config.credentials import aws_uuid
 
 class PostgreSQLUtils:
@@ -48,33 +43,3 @@ class PostgreSQLUtils:
         except sqlalchemy.exc.IntegrityError:
             print(f"Primary Keys already exist...skipping {data}.")
         con.close()
-
-
-    # @staticmethod
-    # def load_playoffs(league_id: str):
-    #     """
-    #     Loads the league's playoff results.
-
-    #     Args:
-    #         league_id (str): The Sleeper ID for the league.
-    #     """
-    #     con = PostgreSQLUtils.connect_retool()
-    #     playoffs_data = pd.DataFrame(League(league_id).get_playoff_winners_bracket())
-    #     playoffs_data["league_id"] = league_id
-    #     playoffs_data.rename(
-    #         columns={
-    #             "t2": "team2",
-    #             "t1": "team1",
-    #             "w": "winner",
-    #             "l": "loser",
-    #             "r": "round_id",
-    #             "m": "matchup_id",
-    #         },
-    #         inplace=True,
-    #     )
-    #     PostgreSQLUtils.store_to_postgresql(
-    #         "sleeper_playoffs",
-    #         playoffs_data,
-    #         con,
-    #         dtype={"t2_from": sqlalchemy.types.JSON, "t1_from": sqlalchemy.types.JSON},
-    #     )

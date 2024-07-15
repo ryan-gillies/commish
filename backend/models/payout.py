@@ -1,26 +1,37 @@
-# import logging
-# from sqlalchemy.orm import relationship
-# from extensions import db
-# from .pool import Pool
+from sqlalchemy import func
+from ..models.pool import Pool
+from ..models.league import League
+from ..models.user import User
 
-# class Payout(db.Model):
-#     __tablename__ = 'payouts'
+from ..database import get_db
+from sqlalchemy.orm import scoped_session
 
-#     pool_id = db.Column(db.String, db.ForeignKey('pools.pool_id'), primary_key=True)
-#     amount = db.Column(db.Float)
-#     week = db.Column(db.Integer)
-#     username = db.Column(db.String)
-#     paid = db.Column(db.Boolean)
-#     league_id = db.Column(db.String, primary_key=True)
-#     season = db.Column(db.Integer)
+
+def get_payouts(season=None):
+    db = next(get_db())
+    query = db.query(Pool.__tablename__).join(League.__tablename__, Pool.league_id == League.league_id)
     
-#     pool = relationship("Pool", backref="payouts")
+    if season is not None:
+        query = query.filter(League.season == season)
+    
+    payouts = query.filter(Pool.paid == True).group_by(Pool.winner, Pool.pool_type).with_entities(
+        Pool.winner,
+        Pool.pool_type,
+        func.sum(Pool.payout_amount).label('amount')
+    ).all()
 
-#     def save_to_database(self):
-#         try:
-#             db.session.add(self)
-#             db.session.commit()
-#         except Exception as e:
-#             db.session.rollback()
-#             logging.error(f"Failed to add payout to database: {e}")
-#             raise
+    formatted_payouts = []
+    for winner, pool_type, amount in payouts:
+        user = db.query(User).get(winner)
+        formatted_payout = {
+            'username': winner,
+            'name': user.name,
+            'amount': float(amount),
+            'pool_type': pool_type
+        }
+        formatted_payouts.append(formatted_payout)
+
+    return formatted_payouts
+
+db = next(get_db())
+print(db.query(Pool).all())
