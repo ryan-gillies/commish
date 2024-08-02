@@ -14,6 +14,7 @@ from sleeperpy import Leagues, Players
 import yaml
 import pandas as pd
 
+from sqlalchemy.orm import relationship
 from sqlalchemy import Column, String, Integer, Float, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from ..database import db

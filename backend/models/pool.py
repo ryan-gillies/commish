@@ -19,7 +19,7 @@ from sqlalchemy import (
     JSON,
     ForeignKey,
 )
-from sqlalchemy.orm import relationship, join
+from sqlalchemy.orm import relationship
 import sys
 import logging
 from venmo_api import Client
@@ -28,9 +28,9 @@ from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta, declar
 
 from ..database import db
 
-from .league import League
 from .stats import *
 from .user import User
+from .league import League
 
 class PoolMetaclass(DeclarativeMeta, ABCMeta):
     pass
@@ -38,6 +38,7 @@ class PoolMetaclass(DeclarativeMeta, ABCMeta):
 Base = declarative_base(metaclass=PoolMetaclass)
 
 class Pool(Base):
+    
     __tablename__ = "pools"
 
     pool_id = Column(String, primary_key=True)
@@ -51,13 +52,13 @@ class Pool(Base):
     pool_type = Column(String)
     pool_subtype = Column(String)
     pool_class = Column(String)
-
+    
     __mapper_args__ = {
         "polymorphic_on": pool_class,
         "polymorphic_identity": "pool",
     }
 
-    # league = relationship("League", backref="pools")
+    # league = relationship(League, backref="pools")
     # user = relationship("User", backref="pools")
 
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
@@ -71,6 +72,7 @@ class Pool(Base):
             week (int): The week of the pool.
         """
         self.pool_id = pool_id
+        self.league = league
         self.league_id = league.league_id
         self.payout_pct = payout_pct
         self.payout_amount = self.set_payout_amount()

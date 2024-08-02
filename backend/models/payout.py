@@ -1,6 +1,6 @@
 from sqlalchemy import func
-from ..models.pool import Pool
 from ..models.league import League
+from ..models.pool import Pool
 from ..models.user import User
 
 from ..database import get_db
@@ -34,25 +34,25 @@ def get_user_payouts(season=None):
 
 def get_payout_details(season=None, username=None):
     db = next(get_db())
-    query = db.query(Pool).join(League, Pool.league_id == League.league_id).filter(Pool.paid == True)
+    query = db.query(Pool, League).join(League, Pool.league_id == League.league_id).filter(Pool.paid == True)
     if season is not None:
         query = query.filter(League.season == season)
     if username is not None:
         query = query.filter(Pool.winner == username)
 
-    detailed_payouts = query.all()
     payout_details = []
-    for payout in detailed_payouts:
-        user = db.query(User).get(payout.winner)
+    for pool, league in query.all():
+        user = db.query(User).get(pool.winner)
         payout_detail = {
-            'pool': payout.label,
-            'amount': float(payout.payout_amount),
-            'week': int(payout.week),
-            'username': payout.winner,
+            'season': str(league.season),
+            'pool': pool.label,
+            'amount': float(pool.payout_amount),
+            'week': int(pool.week),
             'name': user.name,
-            'paid': payout.paid,
-            'season': payout.league.season
+            'paid': pool.paid
         }
         payout_details.append(payout_detail)
     payout_details.sort(key=lambda x: (x['season'], x['week']), reverse=True)
+    print(query)
     return payout_details
+

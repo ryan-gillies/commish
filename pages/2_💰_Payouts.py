@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from backend.database import get_db
 from backend.models.payout import get_user_payouts, get_payout_details
+from backend.models.league import League
 # from utils.css_utils import load_color_scheme_from_css
 
 # Constants
@@ -28,32 +30,38 @@ def create_user_payouts_chart(payouts_df, color_scheme, season=None):
                                         range=list(color_scheme.values())))
     ).properties(
     )
+    chart = st.altair_chart(chart, use_container_width=True)
     return chart
 
+@st.cache_data(ttl=CACHE_TTL)
+def get_cached_payout_details(season):
+    return get_payout_details(season)
+
+def prepare_payout_details_data(season):
+    payouts_data = get_cached_payout_details(season)
+    payouts_df = pd.DataFrame(payouts_data)
+    payouts_df = st.dataframe(payouts_df, use_container_width=True, hide_index=True)
+    return payouts_df
 
 def main():
-    seasons = ['All Time', '2023', '2022']  # Replace with your actual season options
+    db = next(get_db())
+    seasons = db.query(League.season).order_by(League.season.desc()).all()
+    seasons = [row.season for row in seasons] + ['All Time']
     selected_season = st.selectbox('Select a season', seasons)
     st.header(f'Payouts - {selected_season}')
-
 
     if selected_season == 'All Time':
         selected_season = None
     else:
         selected_season
+    
     payouts_df = prepare_user_payouts_data(selected_season)
     color_scheme = {
         'main': '#1c6866',
         'side': '#70afb8',
     }
-
-    chart = create_user_payouts_chart(payouts_df, color_scheme, selected_season)
-
-    st.altair_chart(chart, use_container_width=True)
-
-    payout_details = get_payout_details(selected_season)
-    payout_details_df = pd.DataFrame(payout_details)
-    st.dataframe(payout_details_df, use_container_width=True)
+    create_user_payouts_chart(payouts_df, color_scheme, selected_season)
+    prepare_payout_details_data(selected_season)
 
 
 if __name__ == "__main__":
