@@ -37,10 +37,8 @@ class PoolMetaclass(DeclarativeMeta, ABCMeta):
 
 Base = declarative_base(metaclass=PoolMetaclass)
 
-class Pool(Base, ABC):
+class Pool(Base):
     __tablename__ = "pools"
-    __table_args__ = {"extend_existing": True}
-    __abstract__ = True
 
     pool_id = Column(String, primary_key=True)
     league_id = Column(String, ForeignKey("leagues.league_id"), primary_key=True)
@@ -59,13 +57,8 @@ class Pool(Base, ABC):
         "polymorphic_identity": "pool",
     }
 
-    @declared_attr
-    def league(cls):
-        return relationship("League", backref="pools")
-
-    @declared_attr
-    def user(cls):
-        user = relationship("User", backref="pools")
+    # league = relationship("League", backref="pools")
+    # user = relationship("User", backref="pools")
 
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
