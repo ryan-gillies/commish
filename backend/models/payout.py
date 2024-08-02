@@ -1,26 +1,58 @@
-# import logging
-# from sqlalchemy.orm import relationship
-# from extensions import db
-# from .pool import Pool
+from sqlalchemy import func
+from ..models.pool import Pool
+from ..models.league import League
+from ..models.user import User
 
-# class Payout(db.Model):
-#     __tablename__ = 'payouts'
+from ..database import get_db
+from sqlalchemy.orm import scoped_session
 
-#     pool_id = db.Column(db.String, db.ForeignKey('pools.pool_id'), primary_key=True)
-#     amount = db.Column(db.Float)
-#     week = db.Column(db.Integer)
-#     username = db.Column(db.String)
-#     paid = db.Column(db.Boolean)
-#     league_id = db.Column(db.String, primary_key=True)
-#     season = db.Column(db.Integer)
+def get_user_payouts(season=None):
+    db = next(get_db())
+    query = db.query(Pool).join(League, Pool.league_id == League.league_id).filter(Pool.paid == True)
     
-#     pool = relationship("Pool", backref="payouts")
+    if season is not None:
+        query = query.filter(League.season == season)
+    
+    payouts = query.group_by(Pool.winner, Pool.pool_type).with_entities(
+        Pool.winner,
+        Pool.pool_type,
+        func.sum(Pool.payout_amount).label('amount')
+    ).all()
 
-#     def save_to_database(self):
-#         try:
-#             db.session.add(self)
-#             db.session.commit()
-#         except Exception as e:
-#             db.session.rollback()
-#             logging.error(f"Failed to add payout to database: {e}")
-#             raise
+    user_payouts = []
+    for winner, pool_type, amount in payouts:
+        user = db.query(User).get(winner)
+        user_payout = {
+            'username': winner,
+            'name': user.name,
+            'amount': float(amount),
+            'pool_type': pool_type
+        }
+        user_payouts.append(user_payout)
+
+    return user_payouts
+
+def get_payout_details(season=None, username=None):
+    db = next(get_db())
+    query = db.query(Pool).join(League, Pool.league_id == League.league_id).filter(Pool.paid == True)
+    if season is not None:
+        query = query.filter(League.season == season)
+    if username is not None:
+        query = query.filter(Pool.winner == username)
+
+    detailed_payouts = query.all()
+    payout_details = []
+    for payout in detailed_payouts:
+        user = db.query(User).get(payout.winner)
+        payout_detail = {
+            'pool': payout.label,
+            'amount': float(payout.payout_amount),
+            'week': int(payout.week),
+            'username': payout.winner,
+            'name': user.name,
+            'paid': payout.paid,
+            'season': payout.league.season
+        }
+        payout_details.append(payout_detail)
+    payout_details.sort(key=lambda x: (x['season'], x['week']), reverse=True)
+    return payout_details

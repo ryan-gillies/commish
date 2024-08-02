@@ -13,11 +13,14 @@ Classes:
 from sleeperpy import Leagues, Players
 import yaml
 import pandas as pd
+
 from sqlalchemy import Column, String, Integer, Float, ARRAY
-from ..extensions import db
+from sqlalchemy.ext.declarative import declarative_base
+from ..database import db
 
+Base = declarative_base()
 
-class League(db.Model):
+class League(Base):
     """
     A class for managing league information and calculations.
 
@@ -58,15 +61,16 @@ class League(db.Model):
         self.league_id = self._set_league_id()
         self.state = Leagues.get_state("nfl")
         
+        if db:
+            self.db = db
+
         existing_league = self.query.filter_by(league_id=self.league_id).first()
         if existing_league:
-            self.load_league()
-            self.__dict__ = existing_league.__dict__  # Update self with existing league data
-            self.pools = existing_league.pools  # Access pools directly
+            self.load_league(existing_league)
         else:
             self.create_new_league()
-            db.session.add(self)
-            db.session.commit()
+            self.db.add(self)
+            self.db.commit()
             self.setup_pools()
             self.fetch_stats()
 

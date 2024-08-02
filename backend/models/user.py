@@ -1,13 +1,17 @@
 from typing import Dict
 import yaml
+from sleeperpy import Leagues
+import logging
+
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import insert
-from sleeperpy import Leagues
-import logging
-from ..extensions import db
+from sqlalchemy.ext.declarative import declarative_base
+from ..database import db
 
-class Roster(db.Model):
+Base = declarative_base()
+
+class Roster(Base):
     __tablename__ = 'rosters'
 
     username = Column(String, ForeignKey('users.username'), primary_key=True)
@@ -22,7 +26,7 @@ class Roster(db.Model):
         }
     
 
-class User(db.Model):
+class User(Base):
     """
     Represents a user in the Sleeper fantasy football application.
 

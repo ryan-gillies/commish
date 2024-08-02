@@ -1,0 +1,57 @@
+/* Colors */
+:root {
+    --primary-teal: #1c6866;
+    --secondary-teal: #14b3a9;
+    --primary-grey: #70afb8;
+    --secondary-grey: #cde3e6;
+    --background-color: #FFFFFF;
+  }
+  
+  /* Typography */
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: var(--tertiary-color);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+  
+  /* Buttons */
+  button {
+    background-color: var(--primary-teal);
+    color: var(--background-color);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  button:hover {
+    background-color: var(--secondary-teal); /* Darker shade of blue on hover */
+  }
+
+  /* Sidebar styles */
+  .css-1aumxhk {
+  background-color: #00A8A8; /* Primary teal color */
+  color: white; /* Set text color to white for better contrast */
+  }
+
+  
+  /* Windmill UI styles */
+  .windmill-card {
+    background-color: var(--background-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    padding: 1rem;
+  }
+  
+  .windmill-card h2 {
+    margin-top: 0;
+  }
+  
+  .windmill-card p {
+    color: var(--tertiary-color);
+  }
