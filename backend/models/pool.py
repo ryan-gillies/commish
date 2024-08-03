@@ -58,9 +58,6 @@ class Pool(Base):
         "polymorphic_identity": "pool",
     }
 
-    # league = relationship(League, backref="pools")
-    # user = relationship("User", backref="pools")
-
     def __init__(self, pool_id: str, league, payout_pct: Decimal, week: int):
         """
         Initialize a Pool object.
