@@ -53,6 +53,5 @@ def get_payout_details(season=None, username=None):
         }
         payout_details.append(payout_detail)
     payout_details.sort(key=lambda x: (x['season'], x['week']), reverse=True)
-    print(query)
     return payout_details
 

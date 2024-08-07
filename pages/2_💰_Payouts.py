@@ -8,11 +8,8 @@ from backend.models.payout import get_user_payouts, get_payout_details
 from backend.models.league import League
 from backend.models.pool import Pool
 
-# from utils.css_utils import load_color_scheme_from_css
-
-# Constants
 CACHE_TTL = 3600  # 1 hour
-
+db = next(get_db())
 
 @st.cache_data(ttl=CACHE_TTL)
 def get_cached_user_payouts(season):
@@ -60,7 +57,6 @@ def prepare_payout_details_data(season):
 
 
 def main():
-    db = next(get_db())
     seasons = db.query(League.season) \
              .join(Pool, League.league_id == Pool.league_id, isouter=True) \
              .filter(Pool.payout_amount != None) \

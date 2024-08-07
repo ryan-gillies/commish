@@ -7,7 +7,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.declarative import declarative_base
-from ..database import db
+from ..database import get_db
 
 Base = declarative_base()
 
@@ -158,9 +158,9 @@ class User(Base):
         Returns:
             User: The user object if found, otherwise None.
         """
-
+        db = next(get_db())
         query = (
-            cls.query.join(Roster, cls.username == Roster.username)
+            db.query(User).join(Roster, User.username == Roster.username)
             .filter(Roster.league_id == league_id, Roster.roster_id == roster_id)
             .first()
         )

@@ -698,7 +698,7 @@ class OneWeekHighestScorePool(SeasonPool):
     def get_leaderboard(self):
         league = self.league
         league.fetch_matchups()
-        leaderboard = MatchupStats.get_high_team_score(league, week=None, top_n=5)
+        leaderboard = MatchupStats.get_high_team_score(league, week=None, top_n=12)
         for entry in leaderboard:
             user = User.get_user_by_roster_id(int(entry["roster_id"]), self.league_id)
             entry["username"] = user.username
@@ -727,7 +727,7 @@ class OneWeekHighestScoreAgainstPool(SeasonPool):
         league.fetch_matchups()
         league.get_head_to_head()
         leaderboard = MatchupStats.get_high_score_against(
-            self.league, week=None, top_n=5
+            self.league, week=None, top_n=12
         )
         for entry in leaderboard:
             user = User.get_user_by_roster_id(entry["roster_id"], self.league_id)
@@ -760,7 +760,7 @@ class OneWeekHighestScoringPlayerPool(SeasonPool):
         league = self.league
         league.fetch_matchups()
         league.fetch_player_stats()
-        leaderboard = PlayerStats.get_high_player_score(self.league, week=None, top_n=5)
+        leaderboard = PlayerStats.get_high_player_score(self.league, week=None, top_n=12)
         for entry in leaderboard:
             user = User.get_user_by_roster_id(entry["roster_id"], self.league_id)
             entry["username"] = user.username
@@ -789,7 +789,7 @@ class OneWeekSmallestMarginPool(SeasonPool):
         league.fetch_matchups()
         league.get_head_to_head()
         leaderboard = MatchupStats.get_small_scoring_margin(
-            self.league, week=None, top_n=5
+            self.league, week=None, top_n=12
         )
         for entry in leaderboard:
             user = User.get_user_by_roster_id(entry["roster_id"], self.league_id)
